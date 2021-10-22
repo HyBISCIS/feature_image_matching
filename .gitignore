@@ -1,5 +1,5 @@
 # Folders to Ignore
-img/
+data/
 
 # Byte-compiled / optimized / DLL file
 __pycache__/
