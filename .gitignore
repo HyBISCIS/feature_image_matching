@@ -1,4 +1,7 @@
-# Byte-compiled / optimized / DLL files
+# Folders to Ignore
+img/
+
+# Byte-compiled / optimized / DLL file
 __pycache__/
 *.py[cod]
 *$py.class
