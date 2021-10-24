@@ -27,18 +27,15 @@ imp_c = cv2.imread(filepath)
 # Convert to grayscale and normalize
 imp = cv2.cvtColor(imp_c, cv2.COLOR_BGR2GRAY)
 
-mask = cv2.inRange(imp, 80, 120)
+#mask = cv2.inRange(imp, 50, 140)
+#imp = cv2.bitwise_and(imp, mask)
 
-cv2.bitwise_and(imp, imp, mask=mask)
 
 cv2.normalize(imp, imp, 0, 255, cv2.NORM_MINMAX)
 imp = 255 - imp
 
-plt.imshow(imp)
-plt.show()
-
-
-
+# plt.imshow(imp)
+# plt.show()
 
 # Blur 
 imp = cv2.GaussianBlur(imp, (7,7), 0)
@@ -57,6 +54,9 @@ imp = cv2.morphologyEx(imp, cv2.MORPH_CLOSE, k)
 k1 = cv2.getStructuringElement(cv2.MORPH_RECT,(3,3))
 imp = cv2.morphologyEx(imp, cv2.MORPH_ERODE, k1)
 
+plt.imshow(imp)
+plt.show()
+
 # Find Contours in order to bound rectangles
 contours, hierarchy = cv2.findContours(imp, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
@@ -64,11 +64,100 @@ contours, hierarchy = cv2.findContours(imp, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE
 num_contours = len(contours)
 sorted_contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
-# Take top 5 contours
-new_contours = sorted_contours[1:5]
+# Take top 1-5 contours and use the rest of the contours to mask out stuff we do not care about
+new_contours = sorted_contours[1]
+
+# Another thing we can try TODO: 
+# Determine bounding box for contour
+cv2.drawContours(imp_c, sorted_contours[1], -1, (255,0,0), 3)
+rot_rect = cv2.minAreaRect(sorted_contours[1])
+box = cv2.boxPoints(rot_rect) 
+box = np.int0(box)
+
+# From our box points, try and mask out everything that we do not care about
+# From my observations, it seems that 630 to 1825 is chip height, 1200 height)
+# 1575 to 1825 is side stuff that we dont even want (200 height?)
+# 1825 to 1925 on width side of things (100 width)
+# chip width total is like: 120 to 1920 or 1800 width
+
+# So reduce width by 1/18 on each side 
+# reduce height by 1/6 on each side
+# Gives us bottom left, top left, top right, bottom right
+
+# Determine the size of the box
+box_height = box[0][1] - box[1][1]
+box_width = box[2][0] - box[1][0]
+
+# Width Shrink size
+width_shrink = int(box_width * (1/18))
+height_shrink = int(box_height * (1/8))
+
+# Adjust all widths
+box[0][0] = box[0][0] + width_shrink
+box[1][0] = box[1][0] + width_shrink
+box[2][0] = box[2][0] - width_shrink
+box[3][0] = box[3][0] - width_shrink
+
+# Adjust all heights
+box[0][1] = box[0][1] - 1.7 * height_shrink
+box[1][1] = box[1][1] + height_shrink
+box[2][1] = box[2][1] + height_shrink
+box[3][1] = box[3][1] - 1.7 * height_shrink
+
+mask = np.zeros((len(imp), len(imp)))
+cv2.fillPoly(mask, [box], 255)
+mask = np.array(mask, dtype='uint8')
+
+imp = cv2.bitwise_not(cv2.bitwise_and(imp, mask))
+
+k2 = cv2.getStructuringElement(cv2.MORPH_RECT,(7,7))
+imp = cv2.morphologyEx(imp, cv2.MORPH_OPEN, k2)
+imp = cv2.morphologyEx(imp, cv2.MORPH_CLOSE, k2)
+plt.imshow(imp)
+plt.show()
+
+contours, hierarchy = cv2.findContours(imp, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+sort = sorted(contours, key=cv2.contourArea, reverse=True)
+
+cv2.drawContours(imp_c, sort[1], -1, (0,0,255), 3)
+
+rot_rect = cv2.minAreaRect(sort[1])
+box = cv2.boxPoints(rot_rect) 
+box = np.int0(box)
+
+cv2.drawContours(imp_c, [box], -1, (0,255,0), 3)
 
 
-cv2.drawContours(imp_c, new_contours, -1, (0,255,0), 3)
+
+# fin_mask = np.zeros((len(imp), len(imp)))
+# print("Number of Contours: " + str(len(contours)))
+#
+# # FIXME: THIS TAKES FOREVER TO ACTUALLY RUN SO GET RID OF IF DON'T NEED
+# for i in range(5,len(sorted_contours)):
+#     # Determine bounding box for contour
+#     rot_rect = cv2.minAreaRect(sorted_contours[i])
+#     box = cv2.boxPoints(rot_rect) 
+#     box = np.int0(box)
+
+#     mask = np.zeros((len(imp), len(imp)))
+#     cv2.fillPoly(mask, [box], 1)
+
+#     fin_mask = np.logical_or(fin_mask, mask)
+
+# # Invert all values to create a mask where we just have everything else but small contour boxes
+# fin_mask = fin_mask * 255
+# fin_mask = np.array(fin_mask, dtype='uint8')
+
+# plt.imshow(fin_mask)
+# plt.show()
+
+# # Now, mask it with our image
+# imp = cv2.bitwise_or(imp, fin_mask)
+
+# plt.imshow(imp)
+# plt.show()
+
+#cv2.drawContours(imp_c, new_contours, -1, (0,255,0), 3)
 
 # Show IMage
 plt.imshow(imp_c)
