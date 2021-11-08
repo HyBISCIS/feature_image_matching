@@ -1,41 +1,24 @@
-import csv
 import sys
-import argparse
 import numpy as np
-import scipy.io as scio
-
-# Import matplotlib
-import matplotlib
-matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
-
-# Import skimage packages
-from skimage import io, filters, feature, img_as_float32
-from skimage.transform import rescale
-from skimage.color import rgb2gray
-
-# Import Open CV2
 import cv2
 
-# Import other python packages
-import feature_match as fm
- 
+# Read Image In
 filepath = 'data/f0113/F0113_10012021_initial_BF.tif'
-
 imp_c = cv2.imread(filepath)
 
 # Convert to grayscale and normalize
-imp = cv2.cvtColor(imp_c, cv2.COLOR_BGR2GRAY)
+imp_bw = cv2.cvtColor(imp_c, cv2.COLOR_BGR2GRAY)
+
+plt.imshow(imp_bw)
+plt.show()
 
 #mask = cv2.inRange(imp, 50, 140)
 #imp = cv2.bitwise_and(imp, mask)
 
 
-cv2.normalize(imp, imp, 0, 255, cv2.NORM_MINMAX)
-imp = 255 - imp
-
-# plt.imshow(imp)
-# plt.show()
+cv2.normalize(imp_bw, imp_bw, 0, 255, cv2.NORM_MINMAX)
+imp = 255 - imp_bw
 
 # Blur 
 imp = cv2.GaussianBlur(imp, (7,7), 0)
@@ -73,6 +56,7 @@ cv2.drawContours(imp_c, sorted_contours[1], -1, (255,0,0), 3)
 rot_rect = cv2.minAreaRect(sorted_contours[1])
 box = cv2.boxPoints(rot_rect) 
 box = np.int0(box)
+cv2.drawContours(imp_c, [box], -1, (0,255,0), 3)
 
 # From our box points, try and mask out everything that we do not care about
 # From my observations, it seems that 630 to 1825 is chip height, 1200 height)
@@ -89,8 +73,8 @@ box_height = box[0][1] - box[1][1]
 box_width = box[2][0] - box[1][0]
 
 # Width Shrink size
-width_shrink = int(box_width * (1/18))
-height_shrink = int(box_height * (1/8))
+width_shrink = int(box_width * (1/20000))
+height_shrink = int(box_height * (1/9))
 
 # Adjust all widths
 box[0][0] = box[0][0] + width_shrink
@@ -110,10 +94,26 @@ mask = np.array(mask, dtype='uint8')
 
 imp = cv2.bitwise_not(cv2.bitwise_and(imp, mask))
 
-k2 = cv2.getStructuringElement(cv2.MORPH_RECT,(7,7))
+k2 = cv2.getStructuringElement(cv2.MORPH_RECT,(9,9))
 imp = cv2.morphologyEx(imp, cv2.MORPH_OPEN, k2)
 imp = cv2.morphologyEx(imp, cv2.MORPH_CLOSE, k2)
-plt.imshow(imp)
+
+imp_reverse_mask = cv2.bitwise_not(imp)
+new_bw = cv2.bitwise_and(imp_bw, imp_reverse_mask)
+plt.imshow(new_bw)
+plt.show()
+
+new_bw = cv2.morphologyEx(new_bw, cv2.MORPH_OPEN, k2)
+new_bw = cv2.morphologyEx(new_bw, cv2.MORPH_CLOSE, k2)
+
+dst = cv2.cornerHarris(new_bw, 5, 5, 0.08)
+
+# marking dilated corners 
+dst = cv2.dilate(dst, None) 
+  
+# reverting back to the original image
+imp_c[dst > 0.01 * dst.max()]=[255, 0, 0] 
+plt.imshow(imp_c)
 plt.show()
 
 contours, hierarchy = cv2.findContours(imp, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
