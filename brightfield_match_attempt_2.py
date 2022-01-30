@@ -35,29 +35,22 @@ test_bf = cv2.cvtColor(test_bf_c, cv2.COLOR_BGR2GRAY)
 # plt.title('Magnitude Spectrum')
 # plt.show()
 
-
-
 kernel_size = 5
 main_bf = cv2.GaussianBlur(main_bf, (kernel_size, kernel_size), 0)
 #main_bf = main_bf - main_bf_blur
 test_bf = cv2.GaussianBlur(test_bf, (kernel_size, kernel_size), 0)
 #test_bf = test_bf - test_bf_blur
 
-print("MEOW")
 # Equalize Histogram to get Same Brightness and Contrast of Both Images
 show_hist(main_bf, test_bf, show_histograms)
 equ_main = cv2.equalizeHist(main_bf)
 equ_test = cv2.equalizeHist(test_bf)
 show_equal(main_bf, equ_main, test_bf, equ_test, show_equalized)
 
-print("MEOW1")
-
 # Apply Feature Match Algorithm between Brightfield Images
 sift_detect = cv2.SIFT_create()
 kp1,d1 = sift_detect.detectAndCompute(equ_main, None)
 kp2,d2 = sift_detect.detectAndCompute(equ_test, None)
-
-print("MEOW2")
 
 FLAN_INDEX_KDTREE = 0
 index_params = dict (algorithm = FLAN_INDEX_KDTREE, trees=5)
@@ -65,8 +58,6 @@ search_params = dict(checks=50)
 
 flann = cv2.FlannBasedMatcher(index_params, search_params)
 matches = flann.knnMatch(d1, d2, k=2)
-
-print("MEOW3")
 
 # Determine Uniqueness of Flann Matches using ratio test
 RATIO = 0.6
@@ -92,7 +83,6 @@ dst_pts = np.float32([kp2[m.trainIdx].pt for m in unique_matches]).reshape(-1,1,
 
 M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC,5.0)
 
-print("MEOW4")
 # All this stuff is just to have
 matchesMask = mask.ravel().tolist()
 h,w = main_bf.shape
@@ -119,7 +109,7 @@ bf_test_corners = sum(np.int32(bf_test_corners.round()).tolist(), [])
 print(bf_test_corners)
 
 for (x,y) in bf_test_corners:
-    test_bf_c = cv2.circle(test_bf_c, (x,y), radius=3, color=(255, 0, 0), thickness=-1)
+    test_bf_c = cv2.circle(test_bf_c, (x,y), radius=5, color=(255, 0, 0), thickness=-1)
 
 plt.imshow(test_bf_c)
 plt.show()
@@ -138,7 +128,3 @@ dst2 = cv2.warpPerspective(test_bf_c, M_test_to_clean, (1600,800))
 
 plt.imshow(dst2)
 plt.show()  
-
-# Multiply Affine Matrix with clean brightfield image to get to square pixels
-
-# Apply Transforms and Crop Image

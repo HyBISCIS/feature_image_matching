@@ -75,7 +75,7 @@ def determine_dist_to_amp_func(imp_data, sortedkeys, center, sw_freq, pitch):
     # Run Polynomial Regression to Fit Line
     regression = np.poly1d(np.polyfit(distances, amp, 4))
     sample_x = np.linspace(1e-5, 7e-5, 50)
-    print("Regression Coefficients: ", regression.c)
+    print("Polynomial Coefficients: ", regression.c)
 
     # Plot both 
     plt.figure(10)
