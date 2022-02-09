@@ -121,7 +121,7 @@ def ax_helper(num):
     elif num==3:
         return(1,1)
     else:
-        return -1
+        return -1 b
     
         
 

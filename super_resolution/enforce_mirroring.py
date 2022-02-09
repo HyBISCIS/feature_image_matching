@@ -85,10 +85,33 @@ def linear_filter(myimage, reference_image, upsample_ratio, window2d):
     
     kernel_smoothed = gaussian(kernel,sigma=0.5*upsample_ratio)
     kernel_smoothed /= kernel_smoothed.max()
+    kernel_smoothed = kernel
 
     myimage_filtered = np.fft.fftshift(np.fft.irfft2(input_f * np.fft.rfft2(kernel)))
 
     return myimage_filtered, kernel_smoothed
+
+def linear_filter_help(myimage, upsample_ratio, kernel, num):
+    inputimage = myimage - gaussian(myimage,sigma=10*upsample_ratio)
+    input_f = np.fft.rfft2(inputimage)
+    mirrored_kernel = flip_kernel(num, kernel)
+    myimage_filtered = np.fft.fftshift(np.fft.irfft2(input_f * np.fft.rfft2(mirrored_kernel)))
+
+    return myimage_filtered
+
+def flip_kernel(num, kernel):
+    if num==0:
+        # Top right, flip horizontal
+        return np.fliplr(kernel)
+    elif num==1:
+        # Bottom Left, flip vertical
+        return np.flipud(kernel)
+
+    elif num==2:
+        # Bottom Right, flip both
+        return np.flipud(np.fliplr(kernel))
+    else:
+        print("Something went wrong with flipping kernel")
 
 def minmaxnorm(x):
     return np.nan_to_num((x-np.min(x))/(np.max(x)-np.min(x)))
@@ -146,7 +169,7 @@ micro_snr = power_snr(np.mean(myphoto) / np.std(myphoto))
 
 print("Reference Microscope Image SNR dB: {}\n".format(micro_snr))
 
-upsample_ratio=20
+upsample_ratio=16
 window1d = np.abs(np.hanning(30*upsample_ratio))
 window2d = np.sqrt(np.outer(window1d,window1d)) # Regular window
 window2d = np.pad(window2d,25*upsample_ratio)  # Why do we pad?
@@ -154,63 +177,75 @@ window2d = window2d[myshift(5):(myshift(5)-82), # What are we doing here?
                     myshift(5):(myshift(5)-82)]
 
 compositeimage = None
-compositeimage2 = None
 
-sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs['R'])*100+int(mydata[k].attrs['C']))
 center = (5,5)
+sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs['R'])*100+int(mydata[k].attrs['C']))
 k_reference = [x for x in sortedkeys if freq in x and int(mydata[x].attrs['R'])==center[0] and int(mydata[x].attrs['C'])==center[1]][0]
 reference_image,refmedian,refstd = getimage(mydata, k_reference)
 
 # Get rid of everything except for the frequencies that we are dealing with
 sortedkeys[:] = [x for x in sortedkeys if freq in x]
+
+# Create dictionary with row, col as the key to this sorted key list for easier lookup later
+dict = {}
 count = 0
 
+for i in sortedkeys:
+    row = int(mydata[i].attrs['R'])
+    col = int(mydata[i].attrs['C'])
+
+    dict[(row,col)] = i
+
+# Enumerate through 1/4 of the keys, or from (0,0) -> (5,5) in both directions
 for i in sortedkeys:
     myrow = int(mydata[i].attrs['R'])
     mycol = int(mydata[i].attrs['C'])
 
-    myimage,mymedian,mystd = getimage(mydata,i,shiftrow=myrow,shiftcol=mycol)
+    if (myrow > 5 or mycol > 5):
+        continue
+
+    # Break once reach 5,5 as finished quarter
+    if (myrow==5 and mycol==5):
+        break
+
+    # Get the other things I want to compare against
+    lst = find_mirrored((myrow,mycol), center)
+
+    key = dict[(myrow,mycol)]
+    myimage,mymedian,mystd = getimage(mydata,key,shiftrow=myrow,shiftcol=mycol)
     myimage_filtered,kernel_smoothed = linear_filter(myimage, reference_image, upsample_ratio, window2d)
 
     if compositeimage is None:
         compositeimage = np.zeros_like(myimage)
-        compositeimage2 = np.zeros_like(myimage)
 
-    compositeimage = compositeimage + myimage
-    compositeimage2 = compositeimage2 + myimage_filtered
+    compositeimage += myimage_filtered
+
+    for c,j in enumerate(lst):
+        # Get image
+        key = dict[j]
+        myimage,mymedian,mystd = getimage(mydata,key,shiftrow=j[0],shiftcol=j[1])
+        myimage_filtered = linear_filter_help(myimage,upsample_ratio,kernel_smoothed, c)
+        compositeimage += myimage_filtered
+        
     count += 1
-    print("Count: ", count)
+    print("Iteration: ", count)
+
+# ==============================================
 
 # Normalize both images
 norm_img1 = np.zeros(compositeimage.shape)
-norm_img2 = np.zeros(compositeimage2.shape)
 norm_ref = np.zeros(reference_image.shape)
 compositeimage = cv2.normalize(compositeimage, norm_img1, 0, 255, cv2.NORM_MINMAX)
-compositeimage2 = cv2.normalize(compositeimage2, norm_img2, 0, 255, cv2.NORM_MINMAX)
-reference_image = cv2.normalize(reference_image, norm_ref, 0, 255, cv2.NORM_MINMAX)
 
 # Determine STD, MEAN
 mean1 = np.mean(compositeimage)
 std1 = np.std(compositeimage)
 e_snr_1 = power_snr(mean1 / std1)
 
-mean2 = np.mean(compositeimage2)
-std2 = np.std(compositeimage2)
-e_snr_2 = power_snr(mean2 / std2)
-
-# Reference image SNR
-ref_snr = power_snr(np.mean(reference_image) / np.std(reference_image))
-
-print("Reference Image SNR dB: {}\n".format(ref_snr))
 print("Composite Image 1 (Naive Shift Sum) SNR dB: {}\n".format(e_snr_1))
-print("Composite Image 2 (Deconvolution) SNR dB: {}\n".format(e_snr_2))
 
 plt.figure(1)
-plt.title("Naive Shift Sum")
+plt.title("Enforcing Mirroring")
 plt.imshow(compositeimage)
-
-plt.figure(2)
-plt.title("Linear Deconvolution Method")
-plt.imshow(compositeimage2)
 
 plt.show()
