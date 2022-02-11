@@ -20,6 +20,10 @@ import imageio
 from skimage.transform import warp, PiecewiseAffineTransform
 from skimage.registration import optical_flow_tvl1
 
+CHIP_NAME = "MINERVA" # "LILLIPUT"
+BLOCK_SIZE = (11,11)
+CENTER = (5,5)
+
 # Note: Most of the code is taken from Professor Rosenstein's "plot_lilliput_ECT_4_ifft.py" code"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,7 +97,11 @@ def minmaxnorm(x):
     return np.nan_to_num((x-np.min(x))/(np.max(x)-np.min(x)))
 
 def cropimage(im):
-    return im[10:90,10:90]
+    if (CHIP_NAME == "LILLIPUT"):
+        cropped = im[10:90,10:90]
+    elif (CHIP_NAME == "MINERVA"):
+        cropped = im
+    return cropped
 
 def myshift(x):
     return (40+(5-x)*8)
@@ -121,7 +129,7 @@ def ax_helper(num):
     elif num==3:
         return(1,1)
     else:
-        return -1 b
+        return -1
     
         
 
@@ -144,8 +152,7 @@ window2d = window2d[myshift(5):(myshift(5)-82), # What are we doing here?
                     myshift(5):(myshift(5)-82)]
 
 sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs['R'])*100+int(mydata[k].attrs['C']))
-center = (5,5)
-k_reference = [x for x in sortedkeys if freq in x and int(mydata[x].attrs['R'])==center[0] and int(mydata[x].attrs['C'])==center[1]][0]
+k_reference = [x for x in sortedkeys if freq in x and int(mydata[x].attrs['R'])==CENTER[0] and int(data[x].attrs['C'])==CENTER[1]][0]
 reference_image,refmedian,refstd = getimage(mydata, k_reference)
 
 # Get rid of everything except for the frequencies that we are dealing with
@@ -171,7 +178,7 @@ for i in sortedkeys:
         break
 
     # Get the other things I want to compare against
-    lst = find_mirrored((myrow,mycol), center)
+    lst = find_mirrored((myrow,mycol), CENTER)
     lst.insert(0, (myrow,mycol))
 
     images = []

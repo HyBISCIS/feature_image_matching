@@ -79,8 +79,9 @@ upsample_ratio=16
 window1d = np.abs(np.hanning(30*upsample_ratio))
 window2d = np.sqrt(np.outer(window1d,window1d))
 window2d = np.pad(window2d,25*upsample_ratio)
-window2d = window2d[myshift(5):(myshift(5)-82),
+window2d = window2d[myshift(5):(myshift(5)-82), 
                     myshift(5):(myshift(5)-82)]
+print(window2d.shape)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def getimage(k,shiftrow=5,shiftcol=5):
