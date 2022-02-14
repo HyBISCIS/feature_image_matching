@@ -42,7 +42,7 @@ else:
     im = 'image_2d_ph1'
     # Note: Freq in Hz
 
-    logdir = r"data/super_res"
+    logdir = r"../data/super_res"
     logfile = r"ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_set_1.h5"
     microscope_img = None
 
