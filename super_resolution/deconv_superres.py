@@ -3,8 +3,6 @@ import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import cv2
-import imageio
 from matplotlib import image
 from skimage.transform import resize,rescale, rotate
 from skimage.filters import gaussian
