@@ -81,14 +81,14 @@ for i in sortedkeys:
     myrow = int(mydata[i].attrs[row])
     mycol = int(mydata[i].attrs[col])
     myimage,mymedian,mystd = func.getimage(mydata,i,UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME,shiftrow=myrow,shiftcol=mycol)
-    #myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
+    myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
 
     if compositeimage is None:
         compositeimage = np.zeros_like(myimage)
         compositeimage2 = np.zeros_like(myimage)
 
     compositeimage = compositeimage + myimage
-    #compositeimage2 = compositeimage2 + myimage_filtered
+    compositeimage2 = compositeimage2 + myimage_filtered
 
     # plt.figure(1)
     # plt.imshow(compositeimage2)
