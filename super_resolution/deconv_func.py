@@ -13,6 +13,18 @@ import scipy.signal as sig
 from skimage.transform import warp, PiecewiseAffineTransform
 from skimage.registration import optical_flow_tvl1
 
+
+
+
+def apply_cal(image,coeffs):
+    assert(len(coeffs)==8)
+    image_cal = image.copy()
+
+    for ch in range(8):
+        image_cal[:,ch*32:(ch+1)*32] = image_cal[:,ch*32:(ch+1)*32] * coeffs[ch]
+    return image_cal
+        
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftcol=5):
     # myimage = mydata[k][im][:] 
@@ -27,6 +39,16 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftc
     # myimage = myimage - np.mean(myimage)
     
     myimage = mydata[k][im][:]
+
+    if chip_name == "MINERVA":
+        normrows = range(200,300)
+        coeffs = np.ones(8)
+
+        # normalize by channel
+        for ch in range(8):
+            coeffs[ch] = 1 / np.mean(myimage[normrows, ch*32:(ch+1)*32])
+        myimage = apply_cal(myimage,coeffs)  
+
     myimage = cropimage(myimage, (block_length, block_length))
     block_center = int((block_length - 1) / 2)
 
@@ -37,6 +59,9 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftc
         mystd=np.std(myimage)
         myimage[np.abs(myimage-mymean)>4*mystd] = mymean
         mystd=np.std(myimage)   #[np.abs(myimage-mymedian)<4*mystd])
+
+    # plt.imshow(myimage)
+    # plt.show()
         
     myimage = rescale(myimage,upsample_ratio,order=0)
 
@@ -51,7 +76,6 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftc
         shift_col = myshift(shiftcol, 236, block_center, upsample_ratio)
         myimage = myimage[shift_row:(shift_row-492), shift_col:(shift_col-236)] #FIXME: Weird fix to get 492 , 236 here
 
-    print("Image Shape:",myimage.shape)
     return myimage,mymedian,mystd
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -72,7 +96,7 @@ def linear_filter(myimage, reference_image, upsample_ratio, window2d):
     kernel_f = output_f / input_f         # do the deconvolution
     kernel = np.fft.irfft2(kernel_f)      # inverse Fourier transform
     kernel = np.fft.fftshift(kernel)      # shift origin to center of image
-    kernel *= window2d
+    #kernel *= window2d // FIXME: Get rid of for now so can run stuff
     kernel /= kernel.max()             # normalize gray levels
     
     kernel_smoothed = gaussian(kernel,sigma=0.5*upsample_ratio)
