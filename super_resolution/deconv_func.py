@@ -12,9 +12,6 @@ import scipy.signal as sig
 from skimage.transform import warp, PiecewiseAffineTransform
 from skimage.registration import optical_flow_tvl1
 
-
-
-
 def apply_cal(image,coeffs):
     assert(len(coeffs)==8)
     image_cal = image.copy()
@@ -22,6 +19,13 @@ def apply_cal(image,coeffs):
     for ch in range(8):
         image_cal[:,ch*32:(ch+1)*32] = image_cal[:,ch*32:(ch+1)*32] * coeffs[ch]
     return image_cal
+
+def get_area_around(img, interest_point, radius, upsample_ratio):
+    new_rad = radius * upsample_ratio
+    x = (interest_point[0] - new_rad, interest_point[0] + new_rad)
+    y = (interest_point[1] - new_rad, interest_point[1] + new_rad)
+
+    return img[x[0]:x[1], y[0]:y[1]]
         
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -40,12 +44,11 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftc
     myimage = mydata[k][im][:]
 
     if chip_name == "MINERVA":
-        normrows = range(200,300)
         coeffs = np.ones(8)
 
         # normalize by channel
         for ch in range(8):
-            coeffs[ch] = 1 / np.mean(myimage[normrows, ch*32:(ch+1)*32])
+            coeffs[ch] = 1 / np.mean(myimage[:, ch*32:(ch+1)*32])
         myimage = apply_cal(myimage,coeffs)  
 
     myimage = cropimage(myimage, (block_length, block_length))
@@ -79,12 +82,8 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftc
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def linear_filter(myimage, reference_image, upsample_ratio, window2d):
-
     outputimage = reference_image - gaussian(reference_image,sigma=10*upsample_ratio)
     inputimage = myimage - gaussian(myimage,sigma=10*upsample_ratio)
-    print(outputimage.shape)
-    print(inputimage.shape)
-    print(window2d.shape)
 
     #outputimage = rescale(outputimage,upsample_ratio)#,order=0)
     #inputimage = rescale(inputimage,upsample_ratio)#,order=0)
@@ -95,7 +94,8 @@ def linear_filter(myimage, reference_image, upsample_ratio, window2d):
     kernel_f = output_f / input_f         # do the deconvolution
     kernel = np.fft.irfft2(kernel_f)      # inverse Fourier transform
     kernel = np.fft.fftshift(kernel)      # shift origin to center of image
-    #kernel *= window2d // FIXME: Get rid of for now so can run stuff
+
+    kernel *= window2d # FIXME: NEED TO FIX WINDOWING. IT MAKES THINGS ROUND AGAIN
     kernel /= kernel.max()             # normalize gray levels
     
     kernel_smoothed = gaussian(kernel,sigma=0.5*upsample_ratio)

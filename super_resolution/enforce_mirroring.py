@@ -152,7 +152,7 @@ def ax_helper(num):
 
 # --------------------------------------------------------------------------
 
-logdir = r"data/bead_20um"
+logdir = r"../data/bead_20um"
 logfile = r"phase2_sweep_11x11_block.h5"
 #freq = '6250kHz'
 freq = '1562kHz'
@@ -236,6 +236,8 @@ for i in sortedkeys:
 norm_img1 = np.zeros(compositeimage.shape)
 norm_ref = np.zeros(reference_image.shape)
 compositeimage = cv2.normalize(compositeimage, norm_img1, 0, 255, cv2.NORM_MINMAX)
+
+plt.imsave("../log/beads/mirroring_beads.png", compositeimage)
 
 # Determine STD, MEAN
 mean1 = np.mean(compositeimage)

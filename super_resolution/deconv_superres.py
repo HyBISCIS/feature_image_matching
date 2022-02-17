@@ -1,4 +1,4 @@
-from pickle import FALSE
+from pickle import FALSE, TRUE
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,12 +15,20 @@ from skimage.registration import optical_flow_tvl1
 import deconv_func as func
 
 # TODO: Will be much easier if I just zoom into a thing and then do that.
+# FIXME: Shifting seeming to not work correctly given everything that is happenging.
+#        I believe it has something to do with the weird shifting caused by getimage?
+single_lobe = (140,140)
 
 # MAIN VARIABLES
 CHIP_NAME = "MINERVA" 
 BLOCK_SIZE = (11,11)
-UPSAMPLE_RATIO = 16
+UPSAMPLE_RATIO = 8
 FREQ = 6250  # in kHz
+SAVE_IMAGES = False
+CROP = True
+RAD = 16    # In original pixels rather than upsampled pixels, need to be factor of 2?
+INTEREST_POINT = (single_lobe[0]*UPSAMPLE_RATIO, single_lobe[1]*UPSAMPLE_RATIO)
+CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 
 # Row and Column Offset Names
 if (CHIP_NAME == "LILLIPUT"):
@@ -63,7 +71,11 @@ if microscope_img != None:
     micro_snr = func.get_spatial_snr(myphoto)
     print("Reference Microscope Image SNR dB: {}\n".format(micro_snr))
 
-window2d = func.create_window(CHIP_NAME, BLOCK_SIZE[0], UPSAMPLE_RATIO)
+if CROP:
+    window1d = np.abs(np.hanning(CROPPED_LENGTH))
+    window2d = np.sqrt(np.outer(window1d, window1d))
+else:
+    window2d = func.create_window(CHIP_NAME, BLOCK_SIZE[0], UPSAMPLE_RATIO)
 
 compositeimage = None
 compositeimage2 = None
@@ -72,6 +84,9 @@ sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+i
 k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0] and int(mydata[x].attrs[col])==CENTER[1]][0]
 
 reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME)
+
+if CROP:
+    reference_image = func.get_area_around(reference_image, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
 # Get rid of everything except for the frequencies that we are dealing with
 sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
@@ -87,6 +102,10 @@ for i in sortedkeys:
         mycol += 5
     
     myimage,mymedian,mystd = func.getimage(mydata,i,UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME,shiftrow=myrow,shiftcol=mycol)
+
+    if CROP:
+        myimage = func.get_area_around(myimage, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
+
     myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
 
     if compositeimage is None:
@@ -104,8 +123,9 @@ for i in sortedkeys:
 
 # Save Images
 # FIXME: Switch to .SVG later
-plt.imsave("../log/linear_deconvolution.png", compositeimage2)
-plt.imsave("../log/shift_sum_fixed.png", compositeimage)
+if SAVE_IMAGES:
+    plt.imsave("../log/beads/linear_deconvolution.png", compositeimage2)
+    plt.imsave("../log/beads/shift_sum_beads.png", compositeimage)
 
 # ====================================================
 

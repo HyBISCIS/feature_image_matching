@@ -16,8 +16,8 @@ import deconv_func as func
 # FIXME: On Minerva, row col is from -5 to 5, rather than from 0 to 11 (on lilliput)
 
 def get_area_around(img, interest_point, radius):
-    x = (interest_point[0] - radius, interest_point[0] + radius + 1)
-    y = (interest_point[1] - radius, interest_point[1] + radius + 1)
+    x = (interest_point[0] - radius, interest_point[0] + radius)
+    y = (interest_point[1] - radius, interest_point[1] + radius)
 
     return img[x[0]:x[1], y[0]:y[1]]
 
@@ -30,7 +30,6 @@ feature = two_lobe
 # MAIN VARIABLES
 CHIP_NAME = "MINERVA" 
 BLOCK_SIZE = (11,11)
-CENTER = (5,5)
 UPSAMPLE_RATIO = 16
 FREQ = 6250  # in kHz
 
@@ -46,6 +45,7 @@ if (CHIP_NAME == "LILLIPUT"):
     logdir = r"../data/bead_20um"
     logfile = r"phase2_sweep_11x11_block.h5"
     microscope_img = 'Microscope_bead_20u_0639pm.bmp'
+    CENTER = (5,5)
     # Note: Freq in kHz
 else:
     im_size = (512,256)
@@ -59,6 +59,7 @@ else:
     logdir = r"../data/super_res"
     logfile = r"ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_set_1.h5"
     microscope_img = None
+    CENTER = (0,0)
 
 mydata = h5py.File(os.path.join(logdir,logfile),'r')
 sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
@@ -86,6 +87,7 @@ count = 0
 fig, ax = plt.subplots(11, 11, figsize=(8,8))
 fig.text(0.5, 0.04, 'Column Offset', ha='center', va='center', fontsize=20)
 fig.text(0.06, 0.5, 'Row Offset', ha='center', va='center', rotation='vertical', fontsize=20)
+fig.suptitle("Cosmarium Raw Data")
 
 min = np.inf
 max = -np.inf
@@ -143,9 +145,6 @@ for i in sortedkeys:
     # Get Image of Cosmarium that we want
     mycropped = get_area_around(myimage, feature, 5)
     #mycropped = np.nan_to_num((mycropped-min)/(max-min))
-
-    print(min)
-    print(max)
 
     ax[myrow, mycol].imshow(mycropped, cmap='Greys', vmin=min, vmax=max)
     ax[myrow,mycol].set_xticks([])
