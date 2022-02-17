@@ -23,9 +23,9 @@ def get_area_around(img, interest_point, radius):
 
 # Quick Script to create block diagrams to show off two different algaes in images
 two_lobe = (183,139)
-one_lobe = (326,134)
+one_lobe = (327,134)
 
-feature = two_lobe
+feature = one_lobe
 
 # MAIN VARIABLES
 CHIP_NAME = "MINERVA" 
@@ -53,11 +53,11 @@ else:
     col = "col_offset"
     f_name = "f_sw"
     FREQ = FREQ * 1000
-    im = 'image_2d_ph1'
+    im = 'image_2d_ph2'
     # Note: Freq in Hz
 
     logdir = r"../data/super_res"
-    logfile = r"ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_set_1.h5"
+    logfile = r"ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_set_2.h5"
     microscope_img = None
     CENTER = (0,0)
 
@@ -74,7 +74,8 @@ reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_R
 
 #     if (myrow == 4 and mycol == 4):
 #         myimage = mydata[i][im][:]
-#         myimage = myimage[:500, 130:159]
+#         myimage = func.cropimage(myimage, (11,11))
+#         myimage = myimage[:, 120:149]
 
 #         plt.imshow(myimage, cmap='Greys')
 #         plt.show()
@@ -87,7 +88,7 @@ count = 0
 fig, ax = plt.subplots(11, 11, figsize=(8,8))
 fig.text(0.5, 0.04, 'Column Offset', ha='center', va='center', fontsize=20)
 fig.text(0.06, 0.5, 'Row Offset', ha='center', va='center', rotation='vertical', fontsize=20)
-fig.suptitle("Cosmarium Raw Data")
+fig.suptitle("Pediastrum Raw Data")
 
 min = np.inf
 max = -np.inf
@@ -141,9 +142,19 @@ for i in sortedkeys:
 
     # Crop and Normalize
     myimage = func.cropimage(myimage, (11,11))
+    
 
     # Get Image of Cosmarium that we want
     mycropped = get_area_around(myimage, feature, 5)
+    median = np.median(mycropped)
+    std = np.std(mycropped)
+
+    std_devs = 3
+    min = median - (std_devs * std)
+    max = median + (std_devs * std)
+
+    # min = np.min(mycropped)
+    # max = np.max(mycropped) 
     #mycropped = np.nan_to_num((mycropped-min)/(max-min))
 
     ax[myrow, mycol].imshow(mycropped, cmap='Greys', vmin=min, vmax=max)
