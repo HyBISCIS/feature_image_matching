@@ -96,8 +96,6 @@ for i in sortedkeys:
     compositeimage = compositeimage + myimage
     compositeimage2 = compositeimage2 + myimage_filtered
 
-    break
-
     count += 1
     print("Count: ", count)
 
