@@ -62,7 +62,7 @@ else:
     CENTER = (0,0)
     
     if (LOW_SALT):
-        logfile = r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
+        logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
 
 # --------------------------------------------------------------------------
 
