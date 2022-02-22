@@ -43,7 +43,7 @@ BLOCK_SIZE = (11,11)
 UPSAMPLE_RATIO = 16
 FREQ = 6250  # in kHz
 FREQ = 3125 # in kHz
-WHOLE_PICTURE = False
+WHOLE_PICTURE = True
 
 # Row and Column Offset Names
 if (CHIP_NAME == "LILLIPUT"):
@@ -89,7 +89,8 @@ if WHOLE_PICTURE:
 
         if (myrow == 4 and mycol == 4):
             myimage = mydata[i][im][:]
-
+            myimage = func.low_salt_interpolate(myimage)
+        
             normrows = range(200,300)
             coeffs = np.ones(8)
 
@@ -98,8 +99,7 @@ if WHOLE_PICTURE:
                 coeffs[ch] = 1 / np.mean(myimage[normrows, ch*32:(ch+1)*32])
             myimage = func.apply_cal(myimage,coeffs) 
 
-            myimage = func.cropimage(myimage, (11,11))
-            #myimage = myimage[:, 22:]
+            #myimage = func.cropimage(myimage, (11,11))
 
             plt.imshow(myimage, cmap='Greys')
             plt.show()

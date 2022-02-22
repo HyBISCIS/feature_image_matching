@@ -11,24 +11,26 @@ from skimage.morphology import dilation,erosion,selem
 import scipy.signal as sig
 from skimage.transform import warp, PiecewiseAffineTransform
 from skimage.registration import optical_flow_tvl1
+import time
 
 import deconv_func as func
 
-# TODO: Will be much easier if I just zoom into a thing and then do that.
+
 # FIXME: Shifting seeming to not work correctly given everything that is happenging.
-#        I believe it has something to do with the weird shifting caused by getimage?
+#        I believe it has something to do with the weird shifting caused by getimage? Comes from weird shift in geti
 single_lobe = (140,140)
 
 # MAIN VARIABLES
 CHIP_NAME = "MINERVA" 
 BLOCK_SIZE = (11,11)
-UPSAMPLE_RATIO = 8
-FREQ = 6250  # in kHz
+UPSAMPLE_RATIO = 16 # FIXME: DO NOT CHANGE. WINDOW IS HARD CODED RIGHT NOW
+FREQ = 3125 #6250  # in kHz
 SAVE_IMAGES = False
-CROP = True
-RAD = 16    # In original pixels rather than upsampled pixels, need to be factor of 2?
+CROP = False
+RAD = 16    # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
 INTEREST_POINT = (single_lobe[0]*UPSAMPLE_RATIO, single_lobe[1]*UPSAMPLE_RATIO)
 CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
+LOW_SALT = True
 
 # Row and Column Offset Names
 if (CHIP_NAME == "LILLIPUT"):
@@ -50,26 +52,30 @@ else:
     col = "col_offset"
     f_name = "f_sw"
     FREQ = FREQ * 1000
-    im = 'image_2d_ph1'
+    im = 'image_2d_ph2'
     # Note: Freq in Hz
 
     logdir = r"../data/super_res"
     logfile = r"ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_set_1.h5"
+
     microscope_img = None
     CENTER = (0,0)
+    
+    if (LOW_SALT):
+        logfile = r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
 
 # --------------------------------------------------------------------------
 
 mydata = h5py.File(os.path.join(logdir,logfile),'r')
 
-# Load microscope image
-if microscope_img != None:
-    myphoto = image.imread(os.path.join(logdir,'Microscope_bead_20u_0639pm.bmp'))
-    myphoto=myphoto[200:1130,1100:2020,:]
-    norm = np.zeros(myphoto.shape)
+# # Load microscope image
+# if microscope_img != None:
+#     myphoto = image.imread(os.path.join(logdir,'Microscope_bead_20u_0639pm.bmp'))
+#     myphoto=myphoto[200:1130,1100:2020,:]
+#     norm = np.zeros(myphoto.shape)
 
-    micro_snr = func.get_spatial_snr(myphoto)
-    print("Reference Microscope Image SNR dB: {}\n".format(micro_snr))
+#     micro_snr = func.get_spatial_snr(myphoto)
+#     print("Reference Microscope Image SNR dB: {}\n".format(micro_snr))
 
 if CROP:
     window1d = np.abs(np.hanning(CROPPED_LENGTH))
@@ -83,7 +89,7 @@ compositeimage2 = None
 sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
 k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0] and int(mydata[x].attrs[col])==CENTER[1]][0]
 
-reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME)
+reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
 
 if CROP:
     reference_image = func.get_area_around(reference_image, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
@@ -101,12 +107,16 @@ for i in sortedkeys:
         myrow += 5
         mycol += 5
     
-    myimage,mymedian,mystd = func.getimage(mydata,i,UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME,shiftrow=myrow,shiftcol=mycol)
+    myimage,mymedian,mystd = func.getimage(mydata,i,UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME,LOW_SALT,shiftrow=myrow,shiftcol=mycol)
 
     if CROP:
         myimage = func.get_area_around(myimage, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
+    start = time.time()
     myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
+    end = time.time()
+    print("Linear Filter Elapsed Time (sec):", end-start)
+
 
     if compositeimage is None:
         compositeimage = np.zeros_like(myimage)
@@ -117,6 +127,7 @@ for i in sortedkeys:
 
     count += 1
     print("Count: ", count)
+    break
 
 
 # ====================================================

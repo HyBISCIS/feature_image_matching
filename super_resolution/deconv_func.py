@@ -26,10 +26,24 @@ def get_area_around(img, interest_point, radius, upsample_ratio):
     y = (interest_point[1] - new_rad, interest_point[1] + new_rad)
 
     return img[x[0]:x[1], y[0]:y[1]]
+
+def low_salt_interpolate(img):
+    # Row 502, col 22 for low salt, corrupted, so just do easy interpolation
+    im_size = img.shape
+
+    # Fix Row
+    for i in range(im_size[1]):
+        img[502, i] = (img[503,i] + img[501,i]) / 2
+
+    # Fix Col
+    for j in range(im_size[0]):
+        img[j, 22] = (img[j,21] + img[j, 23]) / 2
+
+    return img
         
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftcol=5):
+def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow=5,shiftcol=5):
     # myimage = mydata[k][im][:] 
     # myimage = cropimage(myimage)
     # #myimage = minmaxnorm(myimage)
@@ -42,6 +56,9 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftc
     # myimage = myimage - np.mean(myimage)
     
     myimage = mydata[k][im][:]
+
+    if low_salt:
+        myimage = low_salt_interpolate(myimage)
 
     if chip_name == "MINERVA":
         coeffs = np.ones(8)
@@ -68,15 +85,25 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,shiftrow=5,shiftc
     myimage = rescale(myimage,upsample_ratio,order=0)
 
     if chip_name == "LILLIPUT":
+        print(shiftrow, shiftcol)
         # FIXME: Ask Rosenstein if we should window by image lengths rather than do this wacky thing
         shift_row = myshift(shiftrow, 80, block_center, upsample_ratio)
         shift_col = myshift(shiftcol, 80, block_center, upsample_ratio)
+        print("Image Shape:", myimage.shape)
+        print("Shift Range: {} , {}".format(shift_row, shift_row-82))
         myimage = myimage[shift_row:(shift_row-82), shift_col:(shift_col-82)]
+        print("Shifted Image Shape:", myimage.shape)
     else:
         # This is going to be 512 by 256, or cropped to 492 : 236
         shift_row = myshift(shiftrow, 492, block_center, upsample_ratio)
         shift_col = myshift(shiftcol, 236, block_center, upsample_ratio)
+        #print("Image Shape:", myimage.shape)
+        #print("Shift Range Row: {} , {}".format(shift_row, shift_row-492))
+        #print("Shift Range Col: {} , {}".format(shift_col, shift_col-236))
         myimage = myimage[shift_row:(shift_row-492), shift_col:(shift_col-236)] #FIXME: Weird fix to get 492 , 236 here
+        #print("Shifted Image Shape:", myimage.shape)
+
+        # TODO: Negative Shifts refer to not including those from the end of the picture.
 
     return myimage,mymedian,mystd
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +122,7 @@ def linear_filter(myimage, reference_image, upsample_ratio, window2d):
     kernel = np.fft.irfft2(kernel_f)      # inverse Fourier transform
     kernel = np.fft.fftshift(kernel)      # shift origin to center of image
 
-    kernel *= window2d # FIXME: NEED TO FIX WINDOWING. IT MAKES THINGS ROUND AGAIN
+    kernel *= window2d 
     kernel /= kernel.max()             # normalize gray levels
     
     kernel_smoothed = gaussian(kernel,sigma=0.5*upsample_ratio)
@@ -148,22 +175,36 @@ def create_window(chip_name, block_length, upsample_ratio):
         # FIXME: Ask Rosenstein if we should window by image lengths rather than do this wacky thing
         shift = myshift(5, 80, block_center, upsample_ratio)
         window1d = np.abs(np.hanning(30*upsample_ratio))
+        print("Window 1D Length:", window1d.shape)
         window2d = np.sqrt(np.outer(window1d,window1d)) 
+        print("Window 2D Shape:", window2d.shape)
         window2d = np.pad(window2d,25*upsample_ratio)  
+        print("Window 2D Padded Shape:", window2d.shape)
         window2d = window2d[shift:(shift-82), shift:(shift-82)] # TODO: ASK ROSENSTEIN WHAT THESE 82 MEAN
+        print("Window Shifted Shape:", window2d.shape)
         return window2d
     else:
         # This is going to be 512 by 256, or cropped to 492 : 236
         shift_row = myshift(5, 492, block_center, upsample_ratio)
         shift_col = myshift(5, 236, block_center, upsample_ratio)
+        # (7600, 6240)
+        # (7872, 3776)
 
-        window_row = np.abs(np.hanning(150 * upsample_ratio))
-        window_col = np.abs(np.hanning(70 * upsample_ratio))
+        window_row = np.abs(np.hanning(175 * upsample_ratio))
+        #print("Window Row Length:", window_row.shape)
+        window_col = np.abs(np.hanning(90 * upsample_ratio))
+       #print("Window Col Length:", window_col.shape)
 
         window2d = np.sqrt(np.outer(window_row, window_col))
-        window2d = np.pad(window2d, 100*upsample_ratio)          # TODO: Is there a better way that we can do this?
+        #print("Window 2D Shape:", window2d.shape)
+        padding_width_row = 160*upsample_ratio - 24
+        padding_width_col = 75*upsample_ratio - 32
+        padding = ((padding_width_row,padding_width_row),(padding_width_col,padding_width_col))
+
+        window2d = np.pad(window2d, padding)          # TODO: Is there a better way that we can do this?
+        #print("Window Padded Shape:", window2d.shape)
         window2d = window2d[shift_row:(shift_row-492), shift_col:(shift_col-236)] # TODO: ASK ROSENSTEIN WHAT THESE 82 MEAN
-        print("Window Shape:", window2d.shape)
+        #print("Window Shifted Shape:", window2d.shape)
 
         return window2d
 
