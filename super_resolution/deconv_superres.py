@@ -127,7 +127,6 @@ for i in sortedkeys:
 
     count += 1
     print("Count: ", count)
-    break
 
 
 # ====================================================
@@ -135,8 +134,8 @@ for i in sortedkeys:
 # Save Images
 # FIXME: Switch to .SVG later
 if SAVE_IMAGES:
-    plt.imsave("../log/beads/linear_deconvolution.png", compositeimage2)
-    plt.imsave("../log/beads/shift_sum_beads.png", compositeimage)
+    plt.imsave("../log/shift_linear_deconv.png", compositeimage2)
+    plt.imsave("../log/shift_sum_one.png", compositeimage)
 
 # ====================================================
 
