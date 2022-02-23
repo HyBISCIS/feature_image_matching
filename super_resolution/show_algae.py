@@ -42,7 +42,7 @@ CHIP_NAME = "MINERVA"
 BLOCK_SIZE = (11,11)
 UPSAMPLE_RATIO = 16
 FREQ = 6250  # in kHz
-FREQ = 3125 # in kHz
+#FREQ = 3125 # in kHz
 WHOLE_PICTURE = True
 
 # Row and Column Offset Names
@@ -67,11 +67,13 @@ else:
     FREQ = FREQ * 1000
     im = 'image_2d_ph2'
     # Note: Freq in Hz
+    
 
     logdir = r"../data/super_res"
     #logfile = r"ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_set_2.h5"
     logfile= r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_400_VSTBY_100_set_2.h5"
     logfile= r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
+    logfile= r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_VCM_500_VSTBY_300_set_2.h5"
 
     microscope_img = None
     CENTER = (0,0)
@@ -79,7 +81,7 @@ else:
 mydata = h5py.File(os.path.join(logdir,logfile),'r')
 sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
 k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0] and int(mydata[x].attrs[col])==CENTER[1]][0]
-reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME)
+reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, True)
 
 if WHOLE_PICTURE:
     for i in sortedkeys:

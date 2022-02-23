@@ -12,6 +12,23 @@ import scipy.signal as sig
 from skimage.transform import warp, PiecewiseAffineTransform
 from skimage.registration import optical_flow_tvl1
 
+def analyze_h5(data):
+    # Print all of the keys
+    print(list(data.keys()))   
+
+    # Loop through one of the keys
+    for i in data.keys():
+        # Print list of attributes
+        a = list(data[i].attrs)
+        print(a)
+
+        # Print list of attributes and what they equal
+        for j in a:
+            print(j, ":", data[i].attrs[j])
+
+
+        exit(0)
+
 def apply_cal(image,coeffs):
     assert(len(coeffs)==8)
     image_cal = image.copy()
@@ -19,6 +36,27 @@ def apply_cal(image,coeffs):
     for ch in range(8):
         image_cal[:,ch*32:(ch+1)*32] = image_cal[:,ch*32:(ch+1)*32] * coeffs[ch]
     return image_cal
+
+def channel_norm(myimage):
+    normrows = range(200,300)
+    image_cal = myimage.copy()
+    im_dim = image_cal.shape
+
+    # Normalize by Channel
+    for ch in range(8):
+        # Define bounds for channel and get coeff
+        bot = (ch*32)
+        top = ((ch+1) * 32)
+        coeff = 1 / np.mean(myimage[normrows, bot:top])
+
+        # Break if out of bounds
+        if (top > im_dim[1]):
+            break
+        
+        # Apply Coefficient
+        image_cal[:,bot:top] = image_cal[:,bot:top] * coeff
+
+    return image_cal 
 
 def get_area_around(img, interest_point, radius, upsample_ratio):
     new_rad = radius * upsample_ratio
@@ -57,16 +95,18 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow
     
     myimage = mydata[k][im][:]
 
+    # plt.imshow(myimage, cmap='Greys')
+    # plt.show()
+
     if low_salt:
         myimage = low_salt_interpolate(myimage)
 
     if chip_name == "MINERVA":
-        coeffs = np.ones(8)
+        myimage = channel_norm(myimage)
 
-        # normalize by channel
-        for ch in range(8):
-            coeffs[ch] = 1 / np.mean(myimage[:, ch*32:(ch+1)*32])
-        myimage = apply_cal(myimage,coeffs)  
+    # plt.imshow(myimage[:490, 6:228], cmap='Greys')
+    # plt.title("Raw Image After Channel Normalization")
+    # plt.show()
 
     myimage = cropimage(myimage, (block_length, block_length))
     block_center = int((block_length - 1) / 2)
@@ -83,6 +123,9 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow
     # plt.show()
         
     myimage = rescale(myimage,upsample_ratio,order=0)
+
+    # plt.imshow(myimage, cmap='Greys')
+    # plt.show()
 
     if chip_name == "LILLIPUT":
         print(shiftrow, shiftcol)
@@ -104,6 +147,9 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow
         #print("Shifted Image Shape:", myimage.shape)
 
         # TODO: Negative Shifts refer to not including those from the end of the picture.
+
+    # plt.imshow(myimage, cmap='Greys')
+    # plt.show()
 
     return myimage,mymedian,mystd
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -25,7 +25,7 @@ CHIP_NAME = "MINERVA"
 BLOCK_SIZE = (11,11)
 UPSAMPLE_RATIO = 16 # FIXME: DO NOT CHANGE. WINDOW IS HARD CODED RIGHT NOW
 FREQ = 3125 #6250  # in kHz
-SAVE_IMAGES = True
+SAVE_IMAGES = False
 CROP = False
 RAD = 16    # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
 INTEREST_POINT = (single_lobe[0]*UPSAMPLE_RATIO, single_lobe[1]*UPSAMPLE_RATIO)
@@ -64,9 +64,13 @@ else:
     if (LOW_SALT):
         logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
 
+    center_img_file = r"minerva_low_salt/impedance_single_phase_3p125_set_3.h5"
 # --------------------------------------------------------------------------
 
 mydata = h5py.File(os.path.join(logdir,logfile),'r')
+
+if (CHIP_NAME == "MINERVA"):    
+    center_data = h5py.File(os.path.join(logdir,center_img_file))
 
 # # Load microscope image
 # if microscope_img != None:
@@ -87,9 +91,17 @@ compositeimage = None
 compositeimage2 = None
 
 sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
-k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0] and int(mydata[x].attrs[col])==CENTER[1]][0]
 
-reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
+k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0]-2 and int(mydata[x].attrs[col])==CENTER[1]][0]
+
+if (CHIP_NAME == "MINERVA"):
+    key = list(center_data.keys())[0]
+    reference_image,refmedian,refstd = func.getimage(center_data, key, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
+else:
+    reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
+
+plt.imshow(reference_image, cmap='Greys')
+plt.show()
 
 if CROP:
     reference_image = func.get_area_around(reference_image, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
@@ -112,22 +124,20 @@ for i in sortedkeys:
     if CROP:
         myimage = func.get_area_around(myimage, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
-    start = time.time()
-    myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
-    end = time.time()
-    print("Linear Filter Elapsed Time (sec):", end-start)
-
+    # start = time.time() 
+    # myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
+    # end = time.time()
+    # print("Linear Filter Elapsed Time (sec):", end-start)
 
     if compositeimage is None:
         compositeimage = np.zeros_like(myimage)
         compositeimage2 = np.zeros_like(myimage)
 
     compositeimage = compositeimage + myimage
-    compositeimage2 = compositeimage2 + myimage_filtered
+    #compositeimage2 = compositeimage2 + myimage_filtered
 
     count += 1
     print("Count: ", count)
-
 
 # ====================================================
 
