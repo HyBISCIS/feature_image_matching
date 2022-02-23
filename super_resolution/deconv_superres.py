@@ -41,6 +41,8 @@ single_lobe = (2262, 3240)
 INTEREST_POINT = (single_lobe[0]*UPSAMPLE_RATIO, single_lobe[1]*UPSAMPLE_RATIO)
 INTEREST_POINT = single_lobe
 
+# FIXME: when we crop something, it is different for the shiftsum and for the linear deconvolution...
+
 
 
 # Row and Column Offset Names
@@ -83,11 +85,12 @@ else:
 
 
 
-# ------------------------ Beginning of Script
+# ------------------------ Beginning of Script -----------------------------
 
 # Initialize Composite Images
 compositeimage = None
 compositeimage2 = None
+compositeimage3 = None
 count = 0
 
 # Load data and sort keys
@@ -138,6 +141,8 @@ if (CHIP_NAME == "MINERVA"):
 else:
     reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
 
+reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
+
 if CROP:
     # FIXME: For some reason, the interest point is wacky and different than the ones in the photos. Not sure why.
     # Kangping said I can probably get rid of that weird shifting thing, so maybe that will help a little?
@@ -175,12 +180,26 @@ for i in sortedkeys:
     if compositeimage is None:
         compositeimage = np.zeros_like(myimage)
         compositeimage2 = np.zeros_like(myimage)
+        compositeimage3 = np.zeros_like(myimage)
 
     compositeimage += myimage_shift
     compositeimage2 += myimage_filtered
+    compositeimage3 += myimage
 
     count += 1
     print("Count: ", count)
+
+    # fig, ax = plt.subplots(1,4)
+    # ax[0].imshow(reference_image, cmap='Greys')
+    # ax[0].set_title("Reference Image")
+    # ax[1].imshow(myimage, cmap='Greys')
+    # ax[1].set_title("My Image")
+    # ax[2].imshow(myimage_shift, cmap='Greys')
+    # ax[2].set_title("My Image Shifted")
+    # ax[3].imshow(myimage_filtered, cmap='Greys')
+    # ax[3].set_title("My Image Filtered")
+    # plt.suptitle("Row Offset: {}, Col Offset: {}".format(myrow, mycol))
+    # plt.show()
 
 
 
@@ -207,15 +226,18 @@ if SAVE_IMAGES:
 # Normalize both images
 compositeimage = func.normalize_img(compositeimage)
 compositeimage2 = func.normalize_img(compositeimage2)
+compositeimage3 = func.normalize_img(compositeimage3)
 
 # SNRs
 c_snr = func.get_spatial_snr(compositeimage)
 c2_snr = func.get_spatial_snr(compositeimage2)
+c3_snr = func.get_spatial_snr(compositeimage3)
 ref_snr = func.get_spatial_snr(reference_image)
 
 print("Reference Image SNR dB: {}\n".format(ref_snr))
 print("Composite Image 1 (Naive Shift Sum) SNR dB: {}\n".format(c_snr))
 print("Composite Image 2 (Deconvolution) SNR dB: {}\n".format(c2_snr))
+print("Composite Image 3 (Just Sum) SNR dB: {}\n".format(c3_snr))
 
 plt.figure(1)
 plt.title("Naive Shift Sum")
@@ -224,5 +246,9 @@ plt.imshow(compositeimage)
 plt.figure(2)
 plt.title("Linear Deconvolution Method")
 plt.imshow(compositeimage2)
+
+plt.figure(3)
+plt.title("Just Sum")
+plt.imshow(compositeimage3)
 
 plt.show()
