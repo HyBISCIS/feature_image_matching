@@ -13,8 +13,6 @@ from skimage.transform import warp, PiecewiseAffineTransform
 from skimage.registration import optical_flow_tvl1
 import deconv_func as func
 
-# FIXME: On Minerva, row col is from -5 to 5, rather than from 0 to 11 (on lilliput)
-
 def get_area_around(img, interest_point, radius):
     x = (interest_point[0] - radius, interest_point[0] + radius)
     y = (interest_point[1] - radius, interest_point[1] + radius)
@@ -23,17 +21,17 @@ def get_area_around(img, interest_point, radius):
 
 # Quick Script to create block diagrams to show off two different algaes in images
 
-# This is for file one
+# ===================       SETTINGS        ==============================
+
+# First Cosmarium Data Set
 two_lobe = (183,139)
 two_lobe_2 = (130,160)
 two_lobe_3 = (317, 80)
 one_lobe = (327,134)
 
-# Low Salt Concentration Stuff
-two_lobe = (139, 171+22)
-one_lobe = (132, 170+22)
-
-
+# Low Salt Concentration Data
+two_lobe = (139, 203)
+one_lobe = (132, 203)
 
 feature = one_lobe
 
@@ -43,7 +41,7 @@ BLOCK_SIZE = (11,11)
 UPSAMPLE_RATIO = 16
 FREQ = 6250  # in kHz
 #FREQ = 3125 # in kHz
-WHOLE_PICTURE = True
+WHOLE_PICTURE = False
 
 # Row and Column Offset Names
 if (CHIP_NAME == "LILLIPUT"):
@@ -68,85 +66,53 @@ else:
     im = 'image_2d_ph2'
     # Note: Freq in Hz
     
-
     logdir = r"../data/super_res"
-    #logfile = r"ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_set_2.h5"
-    logfile= r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_400_VSTBY_100_set_2.h5"
-    logfile= r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
+    # logfile = r"ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_set_2.h5"
+    # logfile= r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_400_VSTBY_100_set_2.h5"
+    # logfile= r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
     logfile= r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_VCM_500_VSTBY_300_set_2.h5"
 
     microscope_img = None
     CENTER = (0,0)
 
+# ================================================================
+
+
+
+
 mydata = h5py.File(os.path.join(logdir,logfile),'r')
 sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
-k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0] and int(mydata[x].attrs[col])==CENTER[1]][0]
-reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, True)
 
+# Setting so that we can take a look at the whole picture to easily find coordinates for things
 if WHOLE_PICTURE:
     for i in sortedkeys:
         myrow = int(mydata[i].attrs[row]) + 5 # In order to remedy (0,0) being the middle
         mycol = int(mydata[i].attrs[col]) + 5
-        print(myrow,mycol)
 
         if (myrow == 4 and mycol == 4):
             myimage = mydata[i][im][:]
             myimage = func.low_salt_interpolate(myimage)
-        
-            normrows = range(200,300)
-            coeffs = np.ones(8)
+            myimage = func.minerva_channel_shift(myimage)
+            myimage = func.channel_norm(myimage)
 
-            # normalize by channel
-            for ch in range(8):
-                coeffs[ch] = 1 / np.mean(myimage[normrows, ch*32:(ch+1)*32])
-            myimage = func.apply_cal(myimage,coeffs) 
-
-            #myimage = func.cropimage(myimage, (11,11))
+            myimage = func.cropimage(myimage, (11,11))
 
             plt.imshow(myimage, cmap='Greys')
             plt.show()
 
             exit(0)
 
+# =======================================================================================
+
 # Get rid of everything except for the frequencies that we are dealing with
 sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
-count = 0
+
+# Plot Information
 fig, ax = plt.subplots(11, 11, figsize=(8,8))
 fig.text(0.5, 0.04, 'Column Offset', ha='center', va='center', fontsize=20)
 fig.text(0.06, 0.5, 'Row Offset', ha='center', va='center', rotation='vertical', fontsize=20)
 fig.suptitle("Pediastrum Raw Data")
 
-min = np.inf
-max = -np.inf
-
-# # Find Min and Max
-# for i in sortedkeys:
-#     myimage = mydata[i][im][:]
-#     normrows = range(200,300)
-#     coeffs = np.ones(8)
-
-#     # normalize by channel
-#     for ch in range(8):
-#         coeffs[ch] = 1 / np.mean(myimage[normrows, ch*32:(ch+1)*32])
-#     myimage = func.apply_cal(myimage,coeffs) 
-
-#     # Crop and Normalize
-#     myimage = func.cropimage(myimage, (11,11))
-
-#     # Get Image of Cosmarium that we want
-#     mycropped = get_area_around(myimage, feature, 5)
-
-#     min_i = np.min(mycropped)
-#     max_i = np.max(mycropped)
-
-#     if (min_i < min):
-#         min = min_i
-
-#     if (max_i > max):
-#         max = max_i
-
-
-# Put into the subplots
 for i in sortedkeys:
 
     myrow = int(mydata[i].attrs[row]) + 5 # In order to remedy (0,0) being the middle
@@ -158,32 +124,24 @@ for i in sortedkeys:
         continue
 
     myimage = mydata[i][im][:]
-    normrows = range(200,300)
-    coeffs = np.ones(8)
-
-    # normalize by channel
-    for ch in range(8):
-        coeffs[ch] = 1 / np.mean(myimage[normrows, ch*32:(ch+1)*32])
-    myimage = func.apply_cal(myimage,coeffs) 
-
-    # Crop and Normalize
+    myimage = func.low_salt_interpolate(myimage)
+    myimage = func.minerva_channel_shift(myimage)
+    myimage = func.channel_norm(myimage)
     myimage = func.cropimage(myimage, (11,11))
-    
 
     # Get Image of Cosmarium that we want
     mycropped = get_area_around(myimage, feature, 5)
     median = np.median(mycropped)
     std = np.std(mycropped)
 
+    # Determine vmin and vmax
     std_devs = 3
     min = median - (std_devs * std)
     max = median + (std_devs * std)
 
-    # min = np.min(mycropped)
-    # max = np.max(mycropped) 
-    #mycropped = np.nan_to_num((mycropped-min)/(max-min))
-
     ax[myrow, mycol].imshow(mycropped, cmap='Greys', vmin=min, vmax=max)
+
+    # Pretty Plot Settings for figure
     ax[myrow,mycol].set_xticks([])
     ax[myrow,mycol].set_yticks([])
 
@@ -195,13 +153,6 @@ for i in sortedkeys:
         ax[myrow, mycol].set_ylabel(str(myrow - 5), rotation=0, loc='center', fontsize=12)
         ax[myrow, mycol].yaxis.set_label_coords(-0.5,0.25)
 
-    count += 1
-
-# labels = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
-# for i in range(11):
-#     plt.setp(ax[-1, i], xlabel=str(labels[i]))
-#     plt.setp(ax[i, 0], ylabel=str(labels[i]))
-    
 
 plt.show()
 

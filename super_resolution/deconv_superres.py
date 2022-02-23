@@ -17,20 +17,31 @@ import deconv_func as func
 
 
 # FIXME: Shifting seeming to not work correctly given everything that is happenging.
-#        I believe it has something to do with the weird shifting caused by getimage? Comes from weird shift in geti
-single_lobe = (140,140)
+#        I believe it has something to do with the weird shifting caused by getimage? Comes from weird shift in get
+
+
+# ===================   Settings     ===================
 
 # MAIN VARIABLES
 CHIP_NAME = "MINERVA" 
 BLOCK_SIZE = (11,11)
-UPSAMPLE_RATIO = 16 # FIXME: DO NOT CHANGE. WINDOW IS HARD CODED RIGHT NOW
-FREQ = 3125 #6250  # in kHz
+UPSAMPLE_RATIO = 16         # FIXME: DO NOT CHANGE. WINDOW IS HARD CODED RIGHT NOW
+FREQ = 3125                 #6250  # in kHz
 SAVE_IMAGES = False
-CROP = False
-RAD = 16    # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
-INTEREST_POINT = (single_lobe[0]*UPSAMPLE_RATIO, single_lobe[1]*UPSAMPLE_RATIO)
-CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 LOW_SALT = True
+
+# Cropping Parameters (In order of Importance)
+CROP = True
+RAD = 16                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
+CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
+
+two_lobe = (139, 171+22)
+single_lobe = (123, 170+15)
+single_lobe = (2262, 3240)
+INTEREST_POINT = (single_lobe[0]*UPSAMPLE_RATIO, single_lobe[1]*UPSAMPLE_RATIO)
+INTEREST_POINT = single_lobe
+
+
 
 # Row and Column Offset Names
 if (CHIP_NAME == "LILLIPUT"):
@@ -65,12 +76,29 @@ else:
         logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
 
     center_img_file = r"minerva_low_salt/impedance_single_phase_3p125_set_3.h5"
-# --------------------------------------------------------------------------
 
+# ======================================================
+
+
+
+
+
+# ------------------------ Beginning of Script
+
+# Initialize Composite Images
+compositeimage = None
+compositeimage2 = None
+count = 0
+
+# Load data and sort keys
 mydata = h5py.File(os.path.join(logdir,logfile),'r')
+sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
+sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
 
 if (CHIP_NAME == "MINERVA"):    
     center_data = h5py.File(os.path.join(logdir,center_img_file))
+
+
 
 # # Load microscope image
 # if microscope_img != None:
@@ -81,36 +109,48 @@ if (CHIP_NAME == "MINERVA"):
 #     micro_snr = func.get_spatial_snr(myphoto)
 #     print("Reference Microscope Image SNR dB: {}\n".format(micro_snr))
 
+
+
+# Creating Window for Deconvolution Superresolution Technique
 if CROP:
-    window1d = np.abs(np.hanning(CROPPED_LENGTH))
+    window_scale = 0.4
+    window_length = int(CROPPED_LENGTH * window_scale)
+    pad_length = int(CROPPED_LENGTH * ((1 - window_scale) / 2))
+    window1d = np.abs(np.hanning(window_length))
     window2d = np.sqrt(np.outer(window1d, window1d))
+    window2d = np.pad(window2d, pad_length+1)
 else:
     window2d = func.create_window(CHIP_NAME, BLOCK_SIZE[0], UPSAMPLE_RATIO)
 
-compositeimage = None
-compositeimage2 = None
+print("Cropped Size:", CROPPED_LENGTH)
+print("Window Size:", window2d.shape)
+plt.imshow(window2d)
+plt.show()
 
-sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
 
+
+# Obtain Reference Images
 k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0]-2 and int(mydata[x].attrs[col])==CENTER[1]][0]
 
 if (CHIP_NAME == "MINERVA"):
     key = list(center_data.keys())[0]
-    reference_image,refmedian,refstd = func.getimage(center_data, key, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
+    reference_image,ref_shifted = func.getimage(center_data, key, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, False)
 else:
-    reference_image,refmedian,refstd = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
+    reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
+
+if CROP:
+    # FIXME: For some reason, the interest point is wacky and different than the ones in the photos. Not sure why.
+    # Kangping said I can probably get rid of that weird shifting thing, so maybe that will help a little?
+    reference_image = func.get_area_around(reference_image, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
 plt.imshow(reference_image, cmap='Greys')
 plt.show()
 
-if CROP:
-    reference_image = func.get_area_around(reference_image, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
-# Get rid of everything except for the frequencies that we are dealing with
-sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
-count = 0
 
+# Iterate through image offsets
 for i in sortedkeys:
+    # Obtain Row and Col Offsets of Particular Image
     myrow = int(mydata[i].attrs[row])
     mycol = int(mydata[i].attrs[col])
 
@@ -119,25 +159,40 @@ for i in sortedkeys:
         myrow += 5
         mycol += 5
     
-    myimage,mymedian,mystd = func.getimage(mydata,i,UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME,LOW_SALT,shiftrow=myrow,shiftcol=mycol)
+    myimage,myimage_shift = func.getimage(mydata,i,UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME,LOW_SALT,shiftrow=myrow,shiftcol=mycol)
 
     if CROP:
         myimage = func.get_area_around(myimage, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
+        myimage_shift = func.get_area_around(myimage_shift, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
-    # start = time.time() 
-    # myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
-    # end = time.time()
-    # print("Linear Filter Elapsed Time (sec):", end-start)
+    # Perform linear filter
+    start = time.time() 
+    myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
+    end = time.time()
+    print("Linear Filter Elapsed Time (sec):", end-start)
 
+    # Sum into the composite images
     if compositeimage is None:
         compositeimage = np.zeros_like(myimage)
         compositeimage2 = np.zeros_like(myimage)
 
-    compositeimage = compositeimage + myimage
-    #compositeimage2 = compositeimage2 + myimage_filtered
+    compositeimage += myimage_shift
+    compositeimage2 += myimage_filtered
 
     count += 1
     print("Count: ", count)
+
+
+
+
+# Normalize at the end?
+if not CROP:
+    compositeimage = func.channel_norm(compositeimage)
+    compositeimage = compositeimage[:7000,1500:]
+
+
+
+
 
 # ====================================================
 

@@ -37,6 +37,14 @@ def apply_cal(image,coeffs):
         image_cal[:,ch*32:(ch+1)*32] = image_cal[:,ch*32:(ch+1)*32] * coeffs[ch]
     return image_cal
 
+def minerva_channel_shift(image):
+    image_shift = np.zeros_like(image)
+
+    for s in range(8):
+        image_shift[:,s*32:(s+1)*32] = np.roll(image[:,s*32:(s+1)*32], 10)
+
+    return image_shift
+
 def channel_norm(myimage):
     normrows = range(200,300)
     image_cal = myimage.copy()
@@ -47,7 +55,7 @@ def channel_norm(myimage):
         # Define bounds for channel and get coeff
         bot = (ch*32)
         top = ((ch+1) * 32)
-        coeff = 1 / np.mean(myimage[normrows, bot:top])
+        coeff = 1 / np.mean(myimage[:, bot:top])
 
         # Break if out of bounds
         if (top > im_dim[1]):
@@ -82,29 +90,20 @@ def low_salt_interpolate(img):
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow=5,shiftcol=5):
-    # myimage = mydata[k][im][:] 
-    # myimage = cropimage(myimage)
-    # #myimage = minmaxnorm(myimage)
-    
-    # #%myimage = myimage - myreference
-    # #myimage = np.divide(myimage,myreference) - 1
-    # myimage[np.isinf(myimage)] = 0
-    # myimage = np.nan_to_num(myimage)
-    
-    # myimage = myimage - np.mean(myimage)
-    
     myimage = mydata[k][im][:]
 
     # plt.imshow(myimage, cmap='Greys')
+    # plt.title("Raw")
     # plt.show()
 
     if low_salt:
         myimage = low_salt_interpolate(myimage)
+        myimage = minerva_channel_shift(myimage)
 
     if chip_name == "MINERVA":
         myimage = channel_norm(myimage)
 
-    # plt.imshow(myimage[:490, 6:228], cmap='Greys')
+    # plt.imshow(myimage, cmap='Greys')
     # plt.title("Raw Image After Channel Normalization")
     # plt.show()
 
@@ -120,38 +119,38 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow
         mystd=np.std(myimage)   #[np.abs(myimage-mymedian)<4*mystd])
 
     # plt.imshow(myimage)
+    # plt.title("Cropped")
     # plt.show()
         
     myimage = rescale(myimage,upsample_ratio,order=0)
 
     # plt.imshow(myimage, cmap='Greys')
+    # plt.title("Rescaled")
     # plt.show()
 
+    # FIXME: KANGPING SAYS THIS MAY BE UNECESSARY, LET US SEE
     if chip_name == "LILLIPUT":
         print(shiftrow, shiftcol)
-        # FIXME: Ask Rosenstein if we should window by image lengths rather than do this wacky thing
         shift_row = myshift(shiftrow, 80, block_center, upsample_ratio)
         shift_col = myshift(shiftcol, 80, block_center, upsample_ratio)
         print("Image Shape:", myimage.shape)
         print("Shift Range: {} , {}".format(shift_row, shift_row-82))
-        myimage = myimage[shift_row:(shift_row-82), shift_col:(shift_col-82)]
+        myimage_shift = myimage[shift_row:(shift_row-82), shift_col:(shift_col-82)]
         print("Shifted Image Shape:", myimage.shape)
-    else:
+    elif chip_name == "MINERVA":
         # This is going to be 512 by 256, or cropped to 492 : 236
         shift_row = myshift(shiftrow, 492, block_center, upsample_ratio)
         shift_col = myshift(shiftcol, 236, block_center, upsample_ratio)
         #print("Image Shape:", myimage.shape)
         #print("Shift Range Row: {} , {}".format(shift_row, shift_row-492))
         #print("Shift Range Col: {} , {}".format(shift_col, shift_col-236))
-        myimage = myimage[shift_row:(shift_row-492), shift_col:(shift_col-236)] #FIXME: Weird fix to get 492 , 236 here
+        myimage_shift = myimage[shift_row:(shift_row-492), shift_col:(shift_col-236)] #FIXME: Weird fix to get 492 , 236 here
         #print("Shifted Image Shape:", myimage.shape)
-
-        # TODO: Negative Shifts refer to not including those from the end of the picture.
 
     # plt.imshow(myimage, cmap='Greys')
     # plt.show()
 
-    return myimage,mymedian,mystd
+    return myimage, myimage_shift
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 def linear_filter(myimage, reference_image, upsample_ratio, window2d):
