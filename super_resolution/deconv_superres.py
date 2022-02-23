@@ -16,7 +16,16 @@ import time
 import deconv_func as func
 
 
-# FIXME: Shifting seeming to not work correctly given everything that is happenging.
+# TODO List
+# TODO: Need to find cosmarium and pediastrum isolated, so can get better results for super_resolution
+# TODO: Try and get smoother linear deconvolutions.
+# TODO: Why do the show_algae.py plots not line up with the ones that I created for
+# TODO: Need to get spatial resolution stuff 
+
+
+
+
+# FIXME: Shifting seeming to not work correctly given everything that is happening.
 #        I believe it has something to do with the weird shifting caused by getimage? Comes from weird shift in get
 
 
@@ -27,6 +36,7 @@ CHIP_NAME = "MINERVA"
 BLOCK_SIZE = (11,11)
 UPSAMPLE_RATIO = 16         # FIXME: DO NOT CHANGE. WINDOW IS HARD CODED RIGHT NOW
 FREQ = 3125                 #6250  # in kHz
+#FREQ = 6250
 SAVE_IMAGES = False
 LOW_SALT = True
 
@@ -76,8 +86,10 @@ else:
     
     if (LOW_SALT):
         logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
+        #logfile = r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_VCM_500_VSTBY_300_set_2.h5"
 
     center_img_file = r"minerva_low_salt/impedance_single_phase_3p125_set_3.h5"
+    #center_img_file = r"minerva_low_salt/impedance_single_phase_6p25_set_2.h5"
 
 # ======================================================
 
@@ -171,6 +183,8 @@ for i in sortedkeys:
         myimage_shift = func.get_area_around(myimage_shift, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
     # Perform linear filter
+    # NOTE: We are no longer using shifted of anything. Up to the linear deconvolution to fix all of that
+    #       which is what we should have done previously. I am not sure why I had not fixed that before. 
     start = time.time() 
     myimage_filtered,kernel_smoothed = func.linear_filter(myimage, reference_image, UPSAMPLE_RATIO, window2d)
     end = time.time()
