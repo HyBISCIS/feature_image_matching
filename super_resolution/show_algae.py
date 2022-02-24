@@ -33,7 +33,11 @@ one_lobe = (327,134)
 two_lobe = (139, 203)
 one_lobe = (132, 203)
 
+one_lobe = (185, 205)
+two_lobe = (274, 114)
+
 feature = one_lobe
+label = "Pediastrum"
 
 # MAIN VARIABLES
 CHIP_NAME = "MINERVA" 
@@ -111,7 +115,7 @@ sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
 fig, ax = plt.subplots(11, 11, figsize=(8,8))
 fig.text(0.5, 0.04, 'Column Offset', ha='center', va='center', fontsize=20)
 fig.text(0.06, 0.5, 'Row Offset', ha='center', va='center', rotation='vertical', fontsize=20)
-fig.suptitle("Pediastrum Raw Data")
+fig.suptitle(label)
 
 for i in sortedkeys:
 

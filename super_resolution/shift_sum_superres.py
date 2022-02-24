@@ -30,7 +30,7 @@ FREQ = 3125                 #6250  # in kHz
 #FREQ = 6250
 SAVE_IMAGES = True
 LOW_SALT = True
-INTERPOLATE_ORDER = 2
+INTERPOLATE_ORDER = 0
 
 # Cropping Parameters (In order of Importance)
 CROP = True
@@ -39,21 +39,16 @@ CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 
 single_lobe = (2262, 3240)      # Single Lobe and Double Lobe near
 single_lobe = (2944,3287)       # Isolated Single Lobe 
-# single_lobe = (6897, 1949)
-# single_lobe = (6837, 1324)
-# single_lobe = (6459, 2352)
+single_lobe = (6897, 1949)
+single_lobe = (6837, 1324)
+single_lobe = (6459, 2352)
 
 two_lobe = (2048,617)           # Isolated Double Lobe
 two_lobe = (3231, 3367)         # Isolated Double Lobe
 two_lobe = (5804, 408)          # Isolated Double Lobe
 two_lobe = (4413, 1830)         # Isolated Double Lobe
 #INTEREST_POINT = (single_lobe[0]*UPSAMPLE_RATIO, single_lobe[1]*UPSAMPLE_RATIO)
-NUM_LOBES = 2
-
-if NUM_LOBES == 2:
-    INTEREST_POINT = two_lobe
-else:
-    INTEREST_POINT = single_lobe
+INTEREST_POINT = single_lobe
 
 
 # Row and Column Offset Names
@@ -101,7 +96,7 @@ else:
 # ------------------------ Beginning of Script -----------------------------
 
 # Initialize Composite Images
-compositeimage2 = None
+compositeimage = None
 count = 0
 
 # Load data and sort keys
@@ -144,23 +139,12 @@ print("Window Size:", window2d.shape)
 
 
 # Obtain Reference Images
-# Note: We make things (5,6) to make things work correctly
-# NOTE: Interesting that different perspectives provides best results?
-if NUM_LOBES == 2:
-    CENTER = (CENTER[0]-2, CENTER[1])
-else:
-    CENTER = (CENTER[0], CENTER[1]+1)
+k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0]-2 and int(mydata[x].attrs[col])==CENTER[1]][0]
+reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT,INTERPOLATE_ORDER)
 
-
-k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0] and int(mydata[x].attrs[col])==CENTER[1]][0]
-
-# if (CHIP_NAME == "MINERVA"):
-#     key = list(center_data.keys())[0]
-#     reference_image,ref_shifted = func.getimage(center_data, key, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, False)
-# else:
-#     reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT)
-
-reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT, INTERPOLATE_ORDER)
+# plt.imshow(reference_image)
+# plt.show()
+# exit(0)
 
 if CROP:
     # FIXME: For some reason, the interest point is wacky and different than the ones in the photos. Not sure why.
@@ -170,10 +154,6 @@ if CROP:
 # plt.imshow(reference_image)
 # plt.show()
 # exit(1)
-
-# FIXME: COMPUTE REFERENCE FFT HERE RATHER THAN INSIDE EACH LOOP
-outputimage = reference_image - gaussian(reference_image,sigma=10*UPSAMPLE_RATIO)
-output_f = np.fft.rfft2(outputimage)
 
 # Iterate through image offsets
 for i in sortedkeys:
@@ -195,20 +175,14 @@ for i in sortedkeys:
 
     if CROP:
         myimage = func.get_area_around(myimage, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
-        new_interest = (INTEREST_POINT[0]-300, INTEREST_POINT[1]-140)
+        new_interest = (INTEREST_POINT[0]-250, INTEREST_POINT[1]-100)
         myimage_shift = func.get_area_around(myimage_shift, new_interest, RAD, UPSAMPLE_RATIO)
 
-    # Perform linear filter
-    # NOTE: We are no longer using shifted of anything. Up to the linear deconvolution to fix all of that
-    #       which is what we should have done previously. I am not sure why I had not fixed that before. 
-    
-    myimage_filtered,kernel_smoothed = func.linear_filter(myimage, output_f, UPSAMPLE_RATIO, window2d)
-
     # Sum into the composite images
-    if compositeimage2 is None:
-        compositeimage2 = np.zeros_like(myimage)
+    if compositeimage is None:
+        compositeimage = np.zeros_like(myimage)
 
-    compositeimage2 += myimage_filtered
+    compositeimage += myimage_shift
 
     count += 1
     print("Count: ", count)
@@ -226,26 +200,38 @@ for i in sortedkeys:
     # plt.show()
 
     end = time.time()
-    print("Linear Filter Elapsed Time (sec):", end-start)
+    print("Image Elapsed Time (sec):", end-start)
+
+# Normalize at the end?
+if not CROP:
+    compositeimage = func.channel_norm(compositeimage)
+    compositeimage = compositeimage[:7000,1500:]
+
+
+# compositeimage2 = unsharp_mask(compositeimage2, radius=5, amount=3)
 
 # ====================================================
 
 # Save Images
 # FIXME: Switch to .SVG later
 if SAVE_IMAGES:
-    plt.imsave("../log/shift_linear_deconv_cosmarium_2.png", compositeimage2)
+    plt.imsave("../log/shift_sum_pediastrum_multicell_2.png", compositeimage)
 
 # ====================================================
 
+print("Composite Mean:", np.mean(compositeimage))
+print("Composite STD:", np.std(compositeimage))
+
+
 # SNRs
-c2_snr = func.get_spatial_snr(compositeimage2)
+c_snr = func.get_spatial_snr(compositeimage)
 ref_snr = func.get_spatial_snr(reference_image)
 
-print("Reference Image SNR dB: {}\n".format(ref_snr))
-print("Composite Image 2 (Deconvolution) SNR dB: {}\n".format(c2_snr))
+print("Reference Image SNR dB: {}".format(ref_snr))
+print("Composite Image 1 (Naive Shift Sum) SNR dB: {}".format(c_snr))
 
 plt.figure(1)
-plt.title("Linear Deconvolution Method")
-plt.imshow(compositeimage2)
-
+plt.title("Naive Shift Sum")
+plt.imshow(compositeimage)
+plt.colorbar()
 plt.show()

@@ -89,7 +89,7 @@ def low_salt_interpolate(img):
         
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow=5,shiftcol=5):
+def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,int_order,shiftrow=5,shiftcol=5):
     myimage = mydata[k][im][:]
 
     # plt.imshow(myimage, cmap='Greys')
@@ -122,7 +122,7 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow
     # plt.title("Cropped")
     # plt.show()
         
-    myimage = rescale(myimage,upsample_ratio,order=0)
+    myimage = rescale(myimage,upsample_ratio,order=int_order)       # Set order to enable interpolation
 
     # plt.imshow(myimage, cmap='Greys')
     # plt.title("Rescaled")
@@ -153,14 +153,8 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,shiftrow
     return myimage, myimage_shift
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-def linear_filter(myimage, reference_image, upsample_ratio, window2d):
-    outputimage = reference_image - gaussian(reference_image,sigma=10*upsample_ratio)
+def linear_filter(myimage, output_f, upsample_ratio, window2d):
     inputimage = myimage - gaussian(myimage,sigma=10*upsample_ratio)
-
-    #outputimage = rescale(outputimage,upsample_ratio)#,order=0)
-    #inputimage = rescale(inputimage,upsample_ratio)#,order=0)
-
-    output_f = np.fft.rfft2(outputimage)
     input_f = np.fft.rfft2(inputimage)
     
     kernel_f = output_f / input_f         # do the deconvolution
