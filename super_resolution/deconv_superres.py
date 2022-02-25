@@ -89,9 +89,6 @@ else:
         logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
         #logfile = r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_VCM_500_VSTBY_300_set_2.h5"
 
-    center_img_file = r"minerva_low_salt/impedance_single_phase_3p125_set_3.h5"
-    #center_img_file = r"minerva_low_salt/impedance_single_phase_6p25_set_2.h5"
-
 # ======================================================
 
 
@@ -108,11 +105,6 @@ count = 0
 mydata = h5py.File(os.path.join(logdir,logfile),'r')
 sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
 sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
-
-if (CHIP_NAME == "MINERVA"):    
-    center_data = h5py.File(os.path.join(logdir,center_img_file))
-
-
 
 # # Load microscope image
 # if microscope_img != None:

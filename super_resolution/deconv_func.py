@@ -92,21 +92,13 @@ def low_salt_interpolate(img):
 def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,int_order,shiftrow=5,shiftcol=5):
     myimage = mydata[k][im][:]
 
-    # plt.imshow(myimage, cmap='Greys')
-    # plt.title("Raw")
-    # plt.show()
-
     if low_salt:
         myimage = low_salt_interpolate(myimage)
         myimage = minerva_channel_shift(myimage)
 
     if chip_name == "MINERVA":
         myimage = channel_norm(myimage)
-
-    # plt.imshow(myimage, cmap='Greys')
-    # plt.title("Raw Image After Channel Normalization")
-    # plt.show()
-
+        
     myimage = cropimage(myimage, (block_length, block_length))
     block_center = int((block_length - 1) / 2)
 

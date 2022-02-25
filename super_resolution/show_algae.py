@@ -23,15 +23,15 @@ def get_area_around(img, interest_point, radius):
 
 # ===================       SETTINGS        ==============================
 
-# First Cosmarium Data Set
-two_lobe = (183,139)
-two_lobe_2 = (130,160)
-two_lobe_3 = (317, 80)
-one_lobe = (327,134)
+# # First Cosmarium Data Set
+# two_lobe = (183,139)
+# two_lobe_2 = (130,160)
+# two_lobe_3 = (317, 80)
+# one_lobe = (327,134)
 
 # Low Salt Concentration Data
-two_lobe = (139, 203)
-one_lobe = (132, 203)
+# two_lobe = (139, 203)
+# one_lobe = (132, 203)
 
 one_lobe = (185, 205)
 two_lobe = (274, 114)
@@ -113,9 +113,9 @@ sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
 
 # Plot Information
 fig, ax = plt.subplots(11, 11, figsize=(8,8))
-fig.text(0.5, 0.04, 'Column Offset', ha='center', va='center', fontsize=20)
-fig.text(0.06, 0.5, 'Row Offset', ha='center', va='center', rotation='vertical', fontsize=20)
-fig.suptitle(label)
+fig.text(0.5, 0.04, 'Column Offset', ha='center', va='center', fontsize=22)
+fig.text(0.06, 0.5, 'Row Offset', ha='center', va='center', rotation='vertical', fontsize=22)
+#fig.suptitle(label)
 
 for i in sortedkeys:
 
@@ -125,6 +125,7 @@ for i in sortedkeys:
     if (myrow == 5 and mycol == 5):
         ax[myrow,mycol].set_xticks([])
         ax[myrow,mycol].set_yticks([])
+        ax[myrow,mycol].axis('off') 
         continue
 
     myimage = mydata[i][im][:]
@@ -150,11 +151,22 @@ for i in sortedkeys:
     ax[myrow,mycol].set_yticks([])
 
     if (myrow == 10):
-        ax[myrow, mycol].set_xlabel(str(mycol - 5), fontsize=12)
+        string =str(mycol - 5)
+        if mycol-5 > 0:
+            string = "+" + string
+
+        ax[myrow, mycol].set_xlabel(string, fontsize=18)
         ax[myrow, mycol].xaxis.set_label_coords(0.5,-0.3)
 
     if (mycol == 0):
-        ax[myrow, mycol].set_ylabel(str(myrow - 5), rotation=0, loc='center', fontsize=12)
+        string = str(myrow-5)
+        if myrow-5 > 0:
+            string = "+" + string
+        
+        if myrow-5 == 0:
+            string = " " + string
+
+        ax[myrow, mycol].set_ylabel(string, rotation=0, loc='center', fontsize=18)
         ax[myrow, mycol].yaxis.set_label_coords(-0.5,0.25)
 
 

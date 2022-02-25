@@ -15,8 +15,6 @@ import time
 
 import deconv_func as func
 
-kernel_size = 4
-
 # Get img, convert to grayscale
 filepath = "../log/shift_linear_deconv_pediastrum_multicell_2.png"
 img = cv2.imread(filepath)
@@ -37,11 +35,14 @@ img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 # ax[2].set_title("Unsharp Mask")
 # ax[2].imshow(unsharped,cmap='Greys')
 
-# Sigma of 12, gets us good results
+# img = cv2.equalizeHist(img)
+
+# NOTE: These are all settings for PEDIASTRUM
 low_pass = gaussian(img, sigma=12)
-high_pass = np.subtract(img,(100*low_pass))
+high_pass = np.subtract(img,(200*low_pass))
 print(func.get_spatial_snr(high_pass))
-plt.imshow(high_pass)
+mean, std = (np.mean(high_pass), np.std(high_pass))
+plt.imshow(high_pass[165:325,165:325],cmap='Greys', vmin=mean-(8*std), vmax=mean+(8*std))
 plt.colorbar()
 plt.show()
 
@@ -50,8 +51,9 @@ plt.show()
 fig, ax = plt.subplots(2,5)
 for i in range(5):
     low_pass = gaussian(img, sigma=(4*i))
-    high_pass = np.subtract(img,(100*low_pass))
-    ax[0,i].imshow(high_pass)
+    high_pass = np.subtract(img,(200*low_pass))
+    mean, std = (np.mean(high_pass), np.std(high_pass))
+    ax[0,i].imshow(high_pass,cmap='Greys', vmin=mean-(8*std), vmax=mean+(8*std))
     ax[1,i].imshow(low_pass)
     print(func.get_spatial_snr(high_pass))
 
