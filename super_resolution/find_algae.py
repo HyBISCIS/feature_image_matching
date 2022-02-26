@@ -34,13 +34,13 @@ INTERPOLATE_ORDER=0
 
 
 # Defining Interest Points
-single_lobe = (452, 3081)
-single_lobe = (2944,3287)
-# single_lobe = (6897, 1949)
-# single_lobe = (6837, 1324)
-# single_lobe = (6459, 2352)
+single_lobe = (2944,3287)       # FIRST GOOD ONE (offset of (0,1))
+#single_lobe = (6258, 2652)      # TEST (Pretty good) offset (1,0)
+#single_lobe = (6824, 1317)      # TEST  offset (1,0)
 
-two_lobe = (4413, 1830)
+two_lobe = (4413, 1830)     # FIRST GOOD ONE (-2, 0) offset
+two_lobe = (1359, 791)      # TEST (OKAY) (-2, -1) Offset
+#two_lobe = (4726, 1630)    # TEST (-3, -1) center offset (good)
 INTEREST_POINT = single_lobe
 
 
@@ -95,12 +95,13 @@ sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+i
 sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
 
 # Obtain Reference Images
-k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0]-2 and int(mydata[x].attrs[col])==CENTER[1]][0]
+# NOTE: -1,0 is very good image.
+k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0]+1 and int(mydata[x].attrs[col])==CENTER[1]+1][0]
 reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT,INTERPOLATE_ORDER)
 
 ax[0].imshow(myphoto[60:-60,60:-60])
 ax[0].set_title("Microscope Image")
-ax[1].imshow(reference_image)
+ax[1].imshow(reference_image, cmap='Greys')
 ax[1].set_title("Reference Image")
 
 if CROP:

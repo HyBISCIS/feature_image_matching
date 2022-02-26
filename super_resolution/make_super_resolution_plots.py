@@ -30,7 +30,7 @@ INTERPOLATE_ORDER = 2
 
 # Cropping Parameters (In order of Importance)
 CROP = True
-RAD = 6                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
+RAD = 8                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
 CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 
 # single_lobe = (2944,3287)       # Isolated Single Lobe 
@@ -100,7 +100,7 @@ sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+i
 sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
 
 if NUM_LOBES == 2:
-    CENTER = (CENTER[0]-2, CENTER[1])
+    CENTER = (CENTER[0]-3, CENTER[1]-1)
 else:
     CENTER = (CENTER[0], CENTER[1]+1)
 
@@ -115,6 +115,8 @@ myimage = func.cropimage(myimage, BLOCK_SIZE)
 whole_mean = np.mean(myimage)
 whole_std = np.std(myimage)
 
+
+# np.save("../log/raw_impedance_array_image", myimage)
 plt.figure(1)
 plt.imshow(myimage, cmap='Greys', vmin=(whole_mean-(5*whole_std)), vmax=(whole_mean+(5*whole_std)))
 plt.xlabel("Column [px]")
@@ -126,43 +128,43 @@ myimage = func.get_area_around(myimage, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
 
 
-# Get subplots for this
-high_pass_norm = func.minmaxnorm(high_pass)
-myimage_norm = func.minmaxnorm(myimage)
+# # Get subplots for this
+# high_pass_norm = func.minmaxnorm(high_pass)
+# myimage_norm = func.minmaxnorm(myimage)
 
 
-diag = np.diagonal(high_pass)
-other_diag = np.diagonal(myimage)
-expand_diag = np.zeros(diag.shape)
-index_count = 0
+# diag = np.diagonal(high_pass)
+# other_diag = np.diagonal(myimage)
+# expand_diag = np.zeros(diag.shape)
+# index_count = 0
 
-for i in range(diag.shape[0]):
-    if (i % 16) == 0 and i != 0:
-        index_count += 1
+# for i in range(diag.shape[0]):
+#     if (i % 16) == 0 and i != 0:
+#         index_count += 1
 
-    expand_diag[i] = other_diag[index_count]
+#     expand_diag[i] = other_diag[index_count]
 
-diag = func.minmaxnorm(diag)
-expand_diag = func.minmaxnorm(expand_diag)
+# diag = func.minmaxnorm(diag)
+# expand_diag = func.minmaxnorm(expand_diag)
 
 
-dist_per_pixel = np.sqrt(200)
-num_pixels = 300 / 16
-tot_dist = dist_per_pixel * num_pixels
-position_arr = np.linspace(0, tot_dist, 300)
-
-plt.figure(2)
-plt.plot(position_arr,diag[100:400], color="r", label="Composite")
-plt.plot(position_arr,expand_diag[100:400], color='b', label='Single')
-plt.xlabel(r"Position [$\mu$m]")
-plt.ylabel("Normalized Intensity")
-plt.legend()
-plt.ylim([-0.05, 1.05])
+# dist_per_pixel = np.sqrt(200)
+# num_pixels = 300 / 16
+# tot_dist = dist_per_pixel * num_pixels
+# position_arr = np.linspace(0, tot_dist, 300)
 
 # plt.figure(2)
-# plt.imshow(myimage, cmap='Greys')
-# plt.xticks([])
-# plt.yticks([])
+# plt.plot(position_arr,diag[100:400], color="r", label="Composite")
+# plt.plot(position_arr,expand_diag[100:400], color='b', label='Single')
+# plt.xlabel(r"Position [$\mu$m]")
+# plt.ylabel("Normalized Intensity")
+# plt.legend()
+# plt.ylim([-0.05, 1.05])
+
+plt.figure(2)
+plt.imshow(myimage, cmap='Greys')
+plt.xticks([])
+plt.yticks([])
 
 
 

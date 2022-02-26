@@ -34,21 +34,24 @@ INTERPOLATE_ORDER = 2
 
 # Cropping Parameters (In order of Importance)
 CROP = True
-RAD = 16                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
+RAD = 8                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
 CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 
-single_lobe = (2262, 3240)      # Single Lobe and Double Lobe near
-single_lobe = (2944,3287)       # Isolated Single Lobe 
+single_lobe = (2944,3287)       # Isolated Single Lobe (I think (1,1) will be better, but right now, (0,1))
+single_lobe = (2925,3278)   # This is the first isolated lobe, but with (1,1) instead so slightly different
+#single_lobe = (6258, 2652)      # (1,0) offset center
+#single_lobe = (6824, 1317)      # TEST  offset (1,0)
 # single_lobe = (6897, 1949)
 # single_lobe = (6837, 1324)
 # single_lobe = (6459, 2352)
 
-two_lobe = (2048,617)           # Isolated Double Lobe
-two_lobe = (3231, 3367)         # Isolated Double Lobe
-two_lobe = (5804, 408)          # Isolated Double Lobe
-two_lobe = (4413, 1830)         # Isolated Double Lobe
-#INTEREST_POINT = (single_lobe[0]*UPSAMPLE_RATIO, single_lobe[1]*UPSAMPLE_RATIO)
-NUM_LOBES = 2
+
+# Three okay ones....
+two_lobe = (4413, 1830)         # First Good One for Isolated Double Lobe (-2,0)
+two_lobe = (1359, 791)      # TEST (OKAY)   (-2,-1)
+two_lobe = (4726, 1630)    # TEST (-3, -1) center offset
+
+NUM_LOBES = 1
 
 if NUM_LOBES == 2:
     INTEREST_POINT = two_lobe
@@ -139,9 +142,10 @@ print("Window Size:", window2d.shape)
 # Note: We make things (5,6) to make things work correctly
 # NOTE: Interesting that different perspectives provides best results?
 if NUM_LOBES == 2:
-    CENTER = (CENTER[0]-2, CENTER[1])
+    #CENTER = (CENTER[0]-2, CENTER[1])      # FIRST GOOD ONE
+    CENTER = (CENTER[0]-2, CENTER[1]-1)
 else:
-    CENTER = (CENTER[0], CENTER[1]+1)
+    CENTER = (CENTER[0]+1, CENTER[1]+1)
 
 
 k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0] and int(mydata[x].attrs[col])==CENTER[1]][0]
@@ -220,12 +224,14 @@ for i in sortedkeys:
     end = time.time()
     print("Linear Filter Elapsed Time (sec):", end-start)
 
+compositeimage2 = func.normalize_img(compositeimage2)
+
 # ====================================================
 
 # Save Images
 # FIXME: Switch to .SVG later
 if SAVE_IMAGES:
-    plt.imsave("../log/shift_linear_deconv_cosmarium_2.png", compositeimage2)
+    plt.imsave("../log/shift_linear_deconv_pediastrum_multicell_offset_1_1.png", compositeimage2)
 
 # ====================================================
 

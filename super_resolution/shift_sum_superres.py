@@ -209,6 +209,7 @@ if not CROP:
 
 
 # compositeimage2 = unsharp_mask(compositeimage2, radius=5, amount=3)
+compositeimage = func.normalize_img(compositeimage)
 
 # ====================================================
 
