@@ -104,8 +104,8 @@ img_2, mean_2, std_2 = fetch_cropped(mydata, key_2, two_lobe)
 ped_img = plt.imread("../data/super_res/minerva_low_salt/Microscope/zoom_3.bmp")
 cos_img = plt.imread("../data/super_res/minerva_low_salt/Microscope/zoom_2.bmp")
 
-cos_m_cropped = func.get_area_around(cos_img, (465,1218), 32, 1)
-ped_m_cropped = func.get_area_around(ped_img, (570, 32), 32, 1)
+cos_m_cropped = (func.get_area_around(cos_img, (465,1218), 32, 1) * 2) - 50
+ped_m_cropped = (func.get_area_around(ped_img, (570, 32), 32, 1) * 2) - 50
 
 # Load Wikipedia Algae Images
 cosmarium = plt.imread("../data/super_res/Cosmarium201512081550.JPG")

@@ -16,45 +16,24 @@ import time
 import deconv_func as func
 
 # Get img, convert to grayscale
-filepath = "../log/shift_linear_deconv_cosmarium_2_second_try.png"
-img = cv2.imread(filepath)
-print(img.shape)
-img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-#img = func.normalize_img(img)
-
-# kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-# kernel = np.array([[0,-1,0], [-1,5,-1], [0,-1,0]])
-# im = cv2.filter2D(img, -1, kernel)
-
-# unsharped = unsharp_mask(img, radius=5, amount=3)
+filepath = "../log/revised_algo/shift_linear_deconv_cosmarium_revised_algo_3.npy"
+img = np.load(filepath)
 
 
-# ax[0].set_title("Original")
-# ax[0].imshow(img, cmap='Greys')
-# ax[1].set_title("Sharpness Kernel")
-# ax[1].imshow(im,cmap='Greys')
-# ax[2].set_title("Unsharp Mask")
-# ax[2].imshow(unsharped,cmap='Greys')
-
-# NOTE: These are all settings for PEDIASTRUM
-low_pass = gaussian(img, sigma=12)
-high_pass = np.subtract(img,(200*low_pass))
-print(func.get_spatial_snr(high_pass))
-mean, std = (np.mean(high_pass), np.std(high_pass))
-plt.imshow(high_pass[165:325,165:325],cmap='Greys')
-plt.colorbar()
-plt.show()
-
-# For cosmarium 3, use std of 6
-
-
+# low_pass = gaussian(img, sigma=3)
+# high_pass = np.subtract(img,(200*low_pass))
+# print(func.get_spatial_snr(high_pass))
+# mean, std = (np.mean(high_pass), np.std(high_pass))
+# plt.imshow(high_pass[165:325,165:325],cmap='Greys')
+# plt.colorbar()
+# plt.show()
 
 fig, ax = plt.subplots(2,5)
 for i in range(5):
-    low_pass = gaussian(img, sigma=(5*i))
-    high_pass = np.subtract(img,(200*low_pass))
+    low_pass = gaussian(img, sigma=7*i)
+    high_pass = np.subtract(img,(0.8*low_pass))
     mean, std = (np.mean(high_pass), np.std(high_pass))
-    ax[0,i].imshow(high_pass,cmap='Greys', vmin=mean-(4*std), vmax=mean+(4*std))
+    ax[0,i].imshow(high_pass,cmap='Greys', vmin=mean-(8*std), vmax=mean+(8*std))
     ax[1,i].imshow(low_pass)
     print(func.get_spatial_snr(high_pass))
 

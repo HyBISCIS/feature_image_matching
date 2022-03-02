@@ -28,7 +28,7 @@ LOW_SALT = True
 
 # Cropping Parameters (In order of Importance)
 CROP = True
-RAD = 16                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
+RAD = 32                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
 CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 INTERPOLATE_ORDER=0
 
@@ -39,9 +39,9 @@ single_lobe = (2944,3287)       # FIRST GOOD ONE (offset of (0,1))
 #single_lobe = (6824, 1317)      # TEST  offset (1,0)
 
 two_lobe = (4413, 1830)     # FIRST GOOD ONE (-2, 0) offset
-two_lobe = (1359, 791)      # TEST (OKAY) (-2, -1) Offset
-#two_lobe = (4726, 1630)    # TEST (-3, -1) center offset (good)
-INTEREST_POINT = single_lobe
+#two_lobe = (1359, 791)      # TEST (OKAY) (-2, -1) Offset
+two_lobe = (4726, 1630)    # TEST (-3, -1) center offset (good)
+INTEREST_POINT = two_lobe
 
 
 # Row and Column Offset Names
@@ -74,7 +74,7 @@ else:
     CENTER = (0,0)
     
     if (LOW_SALT):
-        logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
+        logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_1.h5"
         #logfile = r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_VCM_500_VSTBY_300_set_2.h5"
 
     center_img_file = r"minerva_low_salt/impedance_single_phase_3p125_set_3.h5"
@@ -96,7 +96,7 @@ sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
 
 # Obtain Reference Images
 # NOTE: -1,0 is very good image.
-k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0]+1 and int(mydata[x].attrs[col])==CENTER[1]+1][0]
+k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0]-3 and int(mydata[x].attrs[col])==CENTER[1]-1][0]
 reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,im,BLOCK_SIZE[0],CHIP_NAME, LOW_SALT,INTERPOLATE_ORDER)
 
 ax[0].imshow(myphoto[60:-60,60:-60])

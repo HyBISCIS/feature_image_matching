@@ -28,14 +28,11 @@ def fetch_cropped(data, ref_key,interest_point):
 
     return myimage, whole_mean, whole_std
 
-def fetch_and_highpass(filepath, sigma):
-    # Convert to Color
-    img = cv2.imread(filepath)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
+def highpass(filepath, sigma):
     # High Pass
+    img = np.load(filepath)
     low_pass = gaussian(img, sigma=sigma)
-    high_pass = np.subtract(img,(200*low_pass))
+    high_pass = np.subtract(img,(0.8*low_pass))
     mean, std = (np.mean(high_pass), np.std(high_pass))
 
     return high_pass, mean, std
@@ -97,13 +94,13 @@ else:
 # ============= Super Resolution Image Loading =========================
 
 
-filepath_1 = "../log/shift_linear_deconv_cosmarium.png"
-filepath_2 = "../log/shift_linear_deconv_cosmarium_2_second_try.png"
-filepath_3 = "../log/shift_linear_deconv_cosmarium_3.png"
+filepath_1 = "../log/revised_algo/shift_linear_deconv_cosmarium_revised_algo_1.npy"
+filepath_2 = "../log/revised_algo/shift_linear_deconv_cosmarium_revised_algo_2.npy"
+filepath_3 = "../log/revised_algo/shift_linear_deconv_cosmarium_revised_algo_3.npy"
 
-img_h_1, mean_h_1, std_h_1 = fetch_and_highpass(filepath_1, 12)
-img_h_2, mean_h_2, std_h_2 = fetch_and_highpass(filepath_2, 20)
-img_h_3, mean_h_3, std_h_3 = fetch_and_highpass(filepath_3, 20)
+img_h_1, mean_h_1, std_h_1 = highpass(filepath_1, 20)
+img_h_2, mean_h_2, std_h_2 = highpass(filepath_2, 20)
+img_h_3, mean_h_3, std_h_3 = highpass(filepath_3, 20)
 
 
 
@@ -131,7 +128,7 @@ img_1, mean_1, std_1 = fetch_cropped(mydata, key_1, two_lobe_1)
 img_2, mean_2, std_2 = fetch_cropped(mydata, key_2, two_lobe_2)
 img_3, mean_3, std_3 = fetch_cropped(mydata, key_3, two_lobe_3)
 
-fig, ax = plt.subplots(2,3, figsize=(10,6))
+fig, ax = plt.subplots(2,3, figsize=(10,7))
 ax[0,0].imshow(img_1, cmap='Greys')
 ax[0,1].imshow(img_2, cmap='Greys')
 ax[0,2].imshow(img_3, cmap='Greys')
@@ -141,40 +138,19 @@ ax[0,0].set_ylabel("Row [px]")
 ax[0,0].set_xticks([0,2,4,6,8,10])
 ax[0,1].set_xlabel("Column [px]")
 ax[0,1].set_xticks([0,2,4,6,8,10])
-#ax[0,1].set_ylabel("Column [px]")
 ax[0,2].set_xlabel("Column [px]")
-#ax[0,2].set_ylabel("Column [px]")
 ax[0,2].set_xticks([0,2,4,6,8,10])
 
+top = 168
+bot = 344
 
-# ax[2,0].set_xlabel("Column [px]")
-# ax[0,0].set_xticks([])
-# ax[1,0].set_xticks([])
-
-
-top = 154
-bot = 346
-
-ax[1,0].imshow(img_h_1[top+5:bot+5, top+5:bot+5]*1.15, cmap='Greys', vmin=mean_h_1-(12*std_h_1), vmax=mean_h_1+(20*std_h_1))
-ax[1,1].imshow(img_h_2[30:223, 30:223]*1.08, cmap='Greys', vmin=mean_h_2-(4*std_h_2), vmax=mean_h_2+(4*std_h_2))
-ax[1,2].imshow(img_h_3[top+15:bot+15, top+8:bot+8]*1.13, cmap='Greys', vmin=mean_h_3-(3*std_h_3), vmax=mean_h_3+(3*std_h_3))
+ax[1,0].imshow(img_h_1[top+5:bot, top+5:bot+5], cmap='Greys', vmin=mean_h_1-(8*std_h_1), vmax=mean_h_1+(8*std_h_1))
+ax[1,1].imshow(img_h_2[top:bot, top:bot], cmap='Greys', vmin=mean_h_2-(8*std_h_2), vmax=mean_h_2+(8*std_h_2))
+ax[1,2].imshow(img_h_3[top:bot, top:bot], cmap='Greys', vmin=mean_h_3-(8*std_h_3), vmax=mean_h_3+(8*std_h_3))
 
 ax[1,0].set_xlabel("Upsampled Column [px]")
 ax[1,0].set_ylabel("Upsampled Row [px]")
 ax[1,1].set_xlabel("Upsampled Column [px]")
-#ax[1,1].set_ylabel("Upsampled Column [px]")
 ax[1,2].set_xlabel("Upsampled Column [px]")
-#ax[1,2].set_ylabel("Upsampled Column [px]")
 
-# ax[0,1].yaxis.tick_right()
-# ax[1,1].yaxis.tick_right()
-# ax[2,1].yaxis.tick_right()
-# ax[2,1].set_xlabel("Column [px]")
-# ax[2,1].set_xticks([0,50,100,150])
-# ax[0,1].set_xticks([])
-# ax[1,1].set_xticks([])
-
-
-# fig.text(0.04, 0.5, 'Row [px]', ha='center', va='center', rotation='vertical', fontsize=16)
-#fig.text(0.06, 0.5, 'Row Offset', ha='center', va='center', rotation='vertical', fontsize=22)
 plt.show()

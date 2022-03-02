@@ -98,7 +98,7 @@ def getimage(mydata,k,upsample_ratio,im,block_length,chip_name,low_salt,int_orde
 
     if chip_name == "MINERVA":
         myimage = channel_norm(myimage)
-        
+
     myimage = cropimage(myimage, (block_length, block_length))
     block_center = int((block_length - 1) / 2)
 
@@ -154,10 +154,8 @@ def linear_filter(myimage, output_f, upsample_ratio, window2d):
     kernel = np.fft.fftshift(kernel)      # shift origin to center of image
 
     kernel *= window2d 
-    kernel /= kernel.max()             # normalize gray levels
     
     kernel_smoothed = gaussian(kernel,sigma=0.5*upsample_ratio)
-    kernel_smoothed /= kernel_smoothed.max()
 
     myimage_filtered = np.fft.fftshift(np.fft.irfft2(input_f * np.fft.rfft2(kernel)))
 

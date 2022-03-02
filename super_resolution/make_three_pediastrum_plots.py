@@ -29,13 +29,10 @@ def fetch_cropped(data, ref_key,interest_point):
     return myimage, whole_mean, whole_std
 
 def fetch_and_highpass(filepath, sigma):
-    # Convert to Color
-    img = cv2.imread(filepath)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
     # High Pass
+    img = np.load(filepath)
     low_pass = gaussian(img, sigma=sigma)
-    high_pass = np.subtract(img,(200*low_pass))
+    high_pass = np.subtract(img,(0.8*low_pass))
     mean, std = (np.mean(high_pass), np.std(high_pass))
 
     return high_pass, mean, std
@@ -54,12 +51,12 @@ CROP = True
 RAD = 6                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
 CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 
-one_lobe_1 = (184,205)         # FIRST GOOD ONE (offset of (0,1))
+one_lobe_1 = (183,205)         # FIRST GOOD ONE (offset of (0,1))
 one_lobe_2 = (391,165)         # TEST (Pretty good) offset (1,0)        
 one_lobe_3 = (426,82)          # TEST  offset (1,0)
 
 
-single_lobe = (2944,3287)       
+single_lobe = (2925,3278)   
 single_lobe = (6258,2652)      
 single_lobe = (6824,1317)      
 
@@ -102,13 +99,13 @@ else:
 # ============= Super Resolution Image Loading =========================
 
 
-filepath_1 = "../log/shift_linear_deconv_pediastrum_multicell.png"
-filepath_2 = "../log/shift_linear_deconv_pediastrum_multicell_2.png"
-filepath_3 = "../log/shift_linear_deconv_pediastrum_multicell_3.png"
+filepath_1 = "../log/revised_algo/shift_linear_deconv_pediastrum_revised_algo_1.npy"
+filepath_2 = "../log/revised_algo/shift_linear_deconv_pediastrum_revised_algo_2.npy"
+filepath_3 = "../log/revised_algo/shift_linear_deconv_pediastrum_revised_algo_3.npy"
 
-img_h_1, mean_h_1, std_h_1 = fetch_and_highpass(filepath_1, 12)
-img_h_2, mean_h_2, std_h_2 = fetch_and_highpass(filepath_2, 12)
-img_h_3, mean_h_3, std_h_3 = fetch_and_highpass(filepath_3, 12)
+img_h_1, mean_h_1, std_h_1 = fetch_and_highpass(filepath_1, 20)
+img_h_2, mean_h_2, std_h_2 = fetch_and_highpass(filepath_2, 20)
+img_h_3, mean_h_3, std_h_3 = fetch_and_highpass(filepath_3, 20)
 
 
 
@@ -120,7 +117,7 @@ mydata = h5py.File(os.path.join(logdir,logfile),'r')
 sortedkeys = sorted(mydata.keys(), key=lambda k: int(mydata[k].attrs[row])*100+int(mydata[k].attrs[col]))
 sortedkeys[:] = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ]
 
-CENTER_1 = (CENTER[0], CENTER[1]+1)
+CENTER_1 = (CENTER[0]+1, CENTER[1]+1)
 CENTER_2 = (CENTER[0]+1, CENTER[1])
 CENTER_3 = (CENTER[0]+1, CENTER[1])
 
@@ -129,14 +126,12 @@ key_1 = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(m
 key_2 = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER_2[0] and int(mydata[x].attrs[col])==CENTER_2[1]][0]
 key_3 = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER_3[0] and int(mydata[x].attrs[col])==CENTER_3[1]][0]
 
-
-
 # Load Images
 img_1, mean_1, std_1 = fetch_cropped(mydata, key_1, one_lobe_1)
 img_2, mean_2, std_2 = fetch_cropped(mydata, key_2, one_lobe_2)
 img_3, mean_3, std_3 = fetch_cropped(mydata, key_3, one_lobe_3)
 
-fig, ax = plt.subplots(2,3, figsize=(10,6))
+fig, ax = plt.subplots(2,3, figsize=(10,7))
 ax[0,0].imshow(img_1, cmap='Greys')
 ax[0,1].imshow(img_2, cmap='Greys')
 ax[0,2].imshow(img_3, cmap='Greys')
@@ -146,40 +141,19 @@ ax[0,0].set_ylabel("Row [px]")
 ax[0,0].set_xticks([0,2,4,6,8,10])
 ax[0,1].set_xlabel("Column [px]")
 ax[0,1].set_xticks([0,2,4,6,8,10])
-#ax[0,1].set_ylabel("Column [px]")
 ax[0,2].set_xlabel("Column [px]")
-#ax[0,2].set_ylabel("Column [px]")
 ax[0,2].set_xticks([0,2,4,6,8,10])
-
-
-# ax[2,0].set_xlabel("Column [px]")
-# ax[0,0].set_xticks([])
-# ax[1,0].set_xticks([])
-
 
 top = 168
 bot = 344
 
-ax[1,0].imshow(img_h_1[top:bot, top:bot], cmap='Greys', vmin=mean_h_1-(8*std_h_1), vmax=mean_h_1+(8*std_h_1))
-ax[1,1].imshow(img_h_2[40:216,40:216]*1.5, cmap='Greys', vmin=mean_h_2-(8*std_h_2), vmax=mean_h_2+(8*std_h_2))
-ax[1,2].imshow(img_h_3[40:216,40:216]*1.25, cmap='Greys', vmin=mean_h_3-(3*std_h_3), vmax=mean_h_3+(3*std_h_3))
+ax[1,0].imshow(img_h_1[top:bot, top:bot], cmap='Greys', vmin=mean_h_1-(7*std_h_1), vmax=mean_h_1+(7*std_h_1))
+ax[1,1].imshow(img_h_2[top:bot, top:bot], cmap='Greys', vmin=mean_h_2-(8*std_h_2), vmax=mean_h_2+(8*std_h_2))
+ax[1,2].imshow(img_h_3[top:bot, top:bot], cmap='Greys', vmin=mean_h_3-(8*std_h_3), vmax=mean_h_3+(8*std_h_3))
 
 ax[1,0].set_xlabel("Upsampled Column [px]")
 ax[1,0].set_ylabel("Upsampled Row [px]")
 ax[1,1].set_xlabel("Upsampled Column [px]")
-#ax[1,1].set_ylabel("Upsampled Column [px]")
 ax[1,2].set_xlabel("Upsampled Column [px]")
-#ax[1,2].set_ylabel("Upsampled Column [px]")
 
-# ax[0,1].yaxis.tick_right()
-# ax[1,1].yaxis.tick_right()
-# ax[2,1].yaxis.tick_right()
-# ax[2,1].set_xlabel("Column [px]")
-# ax[2,1].set_xticks([0,50,100,150])
-# ax[0,1].set_xticks([])
-# ax[1,1].set_xticks([])
-
-
-# fig.text(0.04, 0.5, 'Row [px]', ha='center', va='center', rotation='vertical', fontsize=16)
-#fig.text(0.06, 0.5, 'Row Offset', ha='center', va='center', rotation='vertical', fontsize=22)
 plt.show()

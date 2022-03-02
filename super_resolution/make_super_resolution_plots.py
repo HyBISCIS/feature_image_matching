@@ -17,6 +17,21 @@ import deconv_func as func
 
 # FOR PLOTTING PEDIASTRUM OR COSMARIUM AND THE LINE PLOT GOING THROUGH IT
 
+def interpolate(img, row, col):
+    # Row 502, col 22 for low salt, corrupted, so just do easy interpolation
+    im_size = img.shape
+
+    # Fix Row
+    for i in range(im_size[1]):
+        img[row, i] = (img[row+1,i] + img[row-1,i]) / 2
+
+    # Fix Col
+    for j in range(im_size[0]):
+        img[j, col] = (img[j,col+1] + img[j, col-1]) / 2
+
+    return img
+        
+
 
 # MAIN VARIABLES
 CHIP_NAME = "MINERVA" 
@@ -38,7 +53,7 @@ CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 single_lobe = (185, 205)
 two_lobe = (275, 114)
 
-NUM_LOBES = 2
+NUM_LOBES = 1
 
 if NUM_LOBES == 2:
     INTEREST_POINT = two_lobe
@@ -76,11 +91,9 @@ else:
     CENTER = (0,0)
     
     if (LOW_SALT):
-        logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_3.h5"
-        #logfile = r"minerva_low_salt\ECT_block11x11_Mix_Cosmarium_Pediastrum_6p25M_VCM_500_VSTBY_300_set_2.h5"
+        logfile = r"minerva_low_salt/ECT_block11x11_Mix_Cosmarium_Pediastrum_3p125M_VCM_500_VSTBY_300_set_1.h5"
 
     center_img_file = r"minerva_low_salt/impedance_single_phase_3p125_set_3.h5"
-    #center_img_file = r"minerva_low_salt/impedance_single_phase_6p25_set_2.h5"
 
 # ======================================================
 
@@ -104,19 +117,34 @@ if NUM_LOBES == 2:
 else:
     CENTER = (CENTER[0], CENTER[1]+1)
 
+    # (0,0) not worth looking
+    # (0,1) not bad
+    # (1,0) probably best one, but marginally better than (1,1)
+    # (-1,0) not good
+    # (0,-1) drab. Contrast not as good
+    # (-1,-1) not good
+    # (-1, 1) not good
+    # (1, -1) not good
+    # (1,1) okay...
+
+
 # Adjust what reference we use
 k_reference = [x for x in sortedkeys if int(mydata[x].attrs[f_name]) == FREQ and int(mydata[x].attrs[row])==CENTER[0] and int(mydata[x].attrs[col])==CENTER[1]][0]
 
 myimage = mydata[k_reference][im][:]
-myimage = func.low_salt_interpolate(myimage)
+myimage = interpolate(myimage, 501, 245)
+# plt.figure(3)
+# plt.imshow(myimage, cmap='Greys')
+
+
 myimage = func.minerva_channel_shift(myimage)
 myimage = func.channel_norm(myimage)
-myimage = func.cropimage(myimage, BLOCK_SIZE)
+# myimage = func.cropimage(myimage, BLOCK_SIZE)
 whole_mean = np.mean(myimage)
 whole_std = np.std(myimage)
 
 
-# np.save("../log/raw_impedance_array_image", myimage)
+np.save("../log/raw_impedance_array_image_full_image", myimage)
 plt.figure(1)
 plt.imshow(myimage, cmap='Greys', vmin=(whole_mean-(5*whole_std)), vmax=(whole_mean+(5*whole_std)))
 plt.xlabel("Column [px]")
@@ -161,25 +189,25 @@ myimage = func.get_area_around(myimage, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 # plt.legend()
 # plt.ylim([-0.05, 1.05])
 
-plt.figure(2)
-plt.imshow(myimage, cmap='Greys')
-plt.xticks([])
-plt.yticks([])
+# plt.figure(2)
+# plt.imshow(myimage, cmap='Greys')
+# plt.xticks([])
+# plt.yticks([])
 
 
 
-fig, ax = plt.subplots(2,1)
-ax[1].imshow(high_pass, cmap='Greys', vmin=mean-(12*std), vmax=mean+(20*std))
-ax[1].set_xlabel("Upsampled Column [px]")
-ax[1].set_ylabel("Upsampled Row [px]")
-ax[0].imshow(myimage, cmap='Greys')
-ax[0].set_ylabel("Row [px]")
-ax[0].set_xlabel("Column [px]")
+# fig, ax = plt.subplots(2,1)
+# ax[1].imshow(high_pass, cmap='Greys', vmin=mean-(12*std), vmax=mean+(20*std))
+# ax[1].set_xlabel("Upsampled Column [px]")
+# ax[1].set_ylabel("Upsampled Row [px]")
+# ax[0].imshow(myimage, cmap='Greys')
+# ax[0].set_ylabel("Row [px]")
+# ax[0].set_xlabel("Column [px]")
 
-ax[0].yaxis.set_label_position("right")
-ax[0].yaxis.tick_right()
-ax[1].yaxis.set_label_position("right")
-ax[1].yaxis.tick_right()
+# ax[0].yaxis.set_label_position("right")
+# ax[0].yaxis.tick_right()
+# ax[1].yaxis.set_label_position("right")
+# ax[1].yaxis.tick_right()
 
 # ax[2].plot(position_arr,diag[100:400], color="r", label="Composite")
 # ax[2].plot(position_arr,expand_diag[100:400], color='b', label='Single')
