@@ -15,6 +15,8 @@ import time
 
 import deconv_func as func
 
+#  NOTE: This is the main script that runs everything for linear deconvolution.
+# It relies on deconv_func.py in order to work correctly.
 
 # ===================   Settings     ===================
 
@@ -23,31 +25,41 @@ CHIP_NAME = "MINERVA"
 BLOCK_SIZE = (11,11)
 UPSAMPLE_RATIO = 16         # FIXME: DO NOT CHANGE. WINDOW IS HARD CODED RIGHT NOW
 FREQ = 3125                 #6250  # in kHz
-#FREQ = 6250
 SAVE_IMAGES = True
 LOW_SALT = True
 INTERPOLATE_ORDER = 2
+NUM_LOBES = 1
 
 # Cropping Parameters (In order of Importance)
 CROP = True
 RAD = 16                                # Radius of cropped square # In original pixels rather than upsampled pixels, need to be factor of 2?
 CROPPED_LENGTH = 2*RAD*UPSAMPLE_RATIO
 
+# Pediastrum Number 1
 #single_lobe = (2944,3287)       # Isolated Single Lobe (I think (1,1) will be better, but right now, (0,1))
 #single_lobe = (2925,3278)   # This is the first isolated lobe, but with (1,1) instead so slightly different
+
+# Pediastrum Number 2
 #single_lobe = (6258, 2652)      # (1,0) offset center
+
+# Pediastrum Number 3
 single_lobe = (6824, 1317)      # TEST  offset (1,0)
+
+# Extra Pediastrums not included in the writeup
 # single_lobe = (6897, 1949)
 # single_lobe = (6837, 1324)
 # single_lobe = (6459, 2352)
 
+# Cosmarium Number 1
+two_lobe = (4413, 1830)          # First Good One for Isolated Double Lobe (-2,0)
 
-# Three okay ones....
-two_lobe = (4413, 1830)         # First Good One for Isolated Double Lobe (-2,0)
-#two_lobe = (1359, 791)      # TEST (OKAY)   (-2,-1)
-#two_lobe = (4726, 1630)    # TEST (-3, -1) center offset
+# Cosmarium Number 2
+#two_lobe = (1359, 791)          # TEST (OKAY)   (-2,-1)
 
-NUM_LOBES = 1
+# Cosmarium Number 3
+#two_lobe = (4726, 1630)         # TEST (-3, -1) center offset
+
+
 
 if NUM_LOBES == 2:
     INTEREST_POINT = two_lobe
@@ -120,10 +132,8 @@ print("Cropped Size:", CROPPED_LENGTH)
 print("Window Size:", window2d.shape)
 
 # Obtain Reference Images
-# Note: We make things (5,6) to make things work correctly
-# NOTE: Interesting that different perspectives provides best results?
 if NUM_LOBES == 2:
-    CENTER = (CENTER[0]-3, CENTER[1]-1)      # FIRST GOOD ONE
+    CENTER = (CENTER[0]-3, CENTER[1]-1)     
 else:
     CENTER = (CENTER[0]+1, CENTER[1])
 
@@ -134,16 +144,16 @@ reference_image,ref_shifted = func.getimage(mydata, k_reference, UPSAMPLE_RATIO,
 if CROP:
     reference_image = func.get_area_around(reference_image, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
 
+# TODO: Check whether or not having the gaussian even improves things?
 outputimage = reference_image - gaussian(reference_image,sigma=10*UPSAMPLE_RATIO)
 output_f = np.fft.rfft2(outputimage)
 
-# Iterate through image offsets
 for i in sortedkeys:
     start = time.time() 
+
     # Obtain Row and Col Offsets of Particular Image
     myrow = int(mydata[i].attrs[row])
     mycol = int(mydata[i].attrs[col])
-
     dist = np.sqrt(myrow**2 + mycol**2)
 
     if (CHIP_NAME == "MINERVA"):
@@ -159,7 +169,6 @@ for i in sortedkeys:
 
     if CROP:
         myimage = func.get_area_around(myimage, INTEREST_POINT, RAD, UPSAMPLE_RATIO)
-        new_interest = (INTEREST_POINT[0]-300, INTEREST_POINT[1]-140)
 
     # Perform linear filter
     myimage_filtered,kernel_smoothed = func.linear_filter(myimage, output_f, UPSAMPLE_RATIO, window2d)
@@ -171,7 +180,7 @@ for i in sortedkeys:
     compositeimage2 += myimage_filtered
 
     count += 1
-    print("Count: ", count)
+    print("Number of Images Processed: v", count)
 
     end = time.time()
     print("Linear Filter Elapsed Time (sec):", end-start)
@@ -192,8 +201,8 @@ ref_snr = func.get_spatial_snr(reference_image)
 print("Reference Image SNR dB: {}\n".format(ref_snr))
 print("Composite Image 2 (Deconvolution) SNR dB: {}\n".format(c2_snr))
 
+# Display Image
 plt.figure(1)
 plt.title("Linear Deconvolution Method")
 plt.imshow(compositeimage2)
-
 plt.show()

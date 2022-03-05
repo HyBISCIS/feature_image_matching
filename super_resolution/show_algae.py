@@ -13,6 +13,12 @@ from skimage.transform import warp, PiecewiseAffineTransform
 from skimage.registration import optical_flow_tvl1
 import deconv_func as func
 
+'''
+This script was used to display the 11x11 raw image impedance images
+with separate kernel offsets along with all the things needed to make
+the plot like nice and pretty.
+'''
+
 def get_area_around(img, interest_point, radius):
     x = (interest_point[0] - radius, interest_point[0] + radius)
     y = (interest_point[1] - radius, interest_point[1] + radius)

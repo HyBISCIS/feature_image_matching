@@ -15,6 +15,12 @@ import time
 
 import deconv_func as func
 
+'''
+This was the script that created the microscope, reference, and impedance
+image comparison figure. It was used for that purpose, but other than that,
+nothing was required of it.
+'''
+
 def fetch_cropped(data, ref_key,interest_point):
     myimage = data[ref_key][im][:]
     myimage = func.low_salt_interpolate(myimage)

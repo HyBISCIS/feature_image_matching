@@ -15,6 +15,12 @@ import time
 
 import deconv_func as func
 
+'''
+This was an experimental script file used in order to determine what were the
+best hyperparameters for high pass filtering something after the image super-resolution
+pipeline.
+'''
+
 # Get img, convert to grayscale
 filepath = "../log/revised_algo/shift_linear_deconv_cosmarium_revised_algo_3.npy"
 img = np.load(filepath)

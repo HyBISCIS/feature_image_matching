@@ -15,6 +15,12 @@ import time
 
 import deconv_func as func
 
+'''
+This is the script that actually runs through and performs the super-resolution
+composite images at different distances for the figure that shows different 
+distances of composite image composition.
+'''
+
 
 # ===================   Settings     ===================
 

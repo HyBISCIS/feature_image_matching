@@ -15,6 +15,12 @@ import time
 
 import deconv_func as func
 
+'''
+This was an initial file that was used to generate some general figure images before
+we got any real raw data or information. This was not used in the paper submission to
+my knowledge and is not that useful to us.
+'''
+
 # FOR PLOTTING PEDIASTRUM OR COSMARIUM AND THE LINE PLOT GOING THROUGH IT
 
 def interpolate(img, row, col):

@@ -15,10 +15,9 @@ import time
 
 import deconv_func as func
 
-
-# TODO List
-# TODO: Need to get spatial resolution code written to measure distance of beads.
-# TODO: FIX WINDOW ON WHOLE FUNCTION NOW THAT WE DON'T USE SHIFTED FOR LINEAR DECOV
+'''
+Script that only runs shift sum
+'''
 
 # ===================   Settings     ===================
 

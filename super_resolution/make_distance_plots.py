@@ -15,6 +15,13 @@ from skimage.registration import optical_flow_tvl1
 import time
 import deconv_func as func
 
+'''
+This is the function that plots the four different composite images composed of
+different distance offsets and plots them nicely. This was NOT used in the 
+initial submission of the paper due to the lack of clarity in showing how the 
+different distances affect things. It was not as clear as we wanted it to be.
+'''
+
 def highpass_and_crop(img, sigma, crop_x, crop_y):
     # High Pass
     low_pass = gaussian(img, sigma=sigma)

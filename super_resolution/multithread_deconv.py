@@ -15,7 +15,12 @@ import multiprocessing
 
 import deconv_func as func
 
-# TODO: Will be much easier if I just zoom into a thing and then do that.
+'''
+Old deprecated code that ran out of memory quickly. I had initially
+thought that I could just run everything in parallel, but then my
+computer ran out of memory and yelled at me. Perhaps this would work
+on a computer with much more ram allocation than I have on my computer (8 gigs)
+'''
 
 # MAIN VARIABLES
 CHIP_NAME = "MINERVA" 

@@ -15,6 +15,15 @@ import time
 
 import deconv_func as func
 
+'''
+This is the script used to show the full microscope image, one of the
+nicer raw impedance images, and then a zoomed in image based off of the 
+crop hyperparameters. This was used in order to find suitable algae to show
+off in the submission by matching the impedance data to the optical. We were
+then able to obtain coordinates in the raw impedance image which gave us our
+interest points.
+'''
+
 # ===================   Settings     ===================
 
 # MAIN VARIABLES

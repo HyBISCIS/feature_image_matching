@@ -15,6 +15,12 @@ import time
 
 import deconv_func as func
 
+'''
+This was a script used in order to display the three separate pediastrum raw images
+alongside their respective super-resolution reconstruction. This was a figure in
+the paper and a lot of this script exists in order to make things look pretty.
+'''
+
 # FOR PLOTTING PEDIASTRUM OR COSMARIUM AND THE LINE PLOT GOING THROUGH IT
 def fetch_cropped(data, ref_key,interest_point):
     myimage = data[ref_key][im][:]

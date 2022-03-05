@@ -21,6 +21,12 @@ import imageio
 from skimage.transform import warp, PiecewiseAffineTransform
 from skimage.registration import optical_flow_tvl1
 
+'''
+Old script to try and enforce mirroring.
+
+TODO: SCRIPT NEEDS TO BE UPDATED TO RUN ON MINERVA
+'''
+
 # Note: Most of the code is taken from Professor Rosenstein's "plot_lilliput_ECT_4_ifft.py" code"
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

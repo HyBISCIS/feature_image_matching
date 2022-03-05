@@ -15,6 +15,15 @@ import time
 
 import deconv_func as func
 
+'''
+Script used to create nice looking line profiles and figures for the
+paper submission. 
+
+We note the odd disparity of the pediastrum, in which the polarity flips
+in the middle of the cell during the super-resolution reconstruction. We
+are not sure why, but we are looking into it.
+'''
+
 # FOR PLOTTING PEDIASTRUM OR COSMARIUM AND THE LINE PLOT GOING THROUGH IT
 def fetch_cropped(data, ref_key,interest_point):
     myimage = data[ref_key][im][:]
